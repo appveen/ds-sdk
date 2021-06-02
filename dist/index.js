@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CRUDMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRoles = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
+exports.CRUDMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRole = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
 const got_1 = __importDefault(require("got"));
 const lodash_1 = require("lodash");
 const rxjs_1 = require("rxjs");
@@ -48,11 +48,9 @@ class AuthHandler {
                 const data = resp.body;
                 this.patchData(data);
                 if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
-                    console.log('Creating HB Routine');
                     this.createHBRoutine();
                 }
                 if (this.rbacUserTokenRefresh) {
-                    console.log('Creating Refresh Routine');
                     this.createTokenRefreshRoutine();
                 }
                 return new DataStack();
@@ -391,7 +389,7 @@ class DSDataService {
     }
     getRoles() {
         try {
-            return new DSDataServiceRoles(this.app, this.data);
+            return new DSDataServiceRole(this.app, this.data);
         }
         catch (err) {
             console.error('[ERROR] [getRoles]', err);
@@ -476,7 +474,7 @@ class DSDataService {
     }
 }
 exports.DSDataService = DSDataService;
-class DSDataServiceRoles {
+class DSDataServiceRole {
     constructor(app, data) {
         this.app = app;
         this.data = data;
@@ -540,7 +538,7 @@ class DSDataServiceRoles {
         }
     }
 }
-exports.DSDataServiceRoles = DSDataServiceRoles;
+exports.DSDataServiceRole = DSDataServiceRole;
 class DSDataServiceIntegration {
     constructor(app, data) {
         this.app = app;

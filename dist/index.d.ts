@@ -27,15 +27,15 @@ export declare class DSDataService {
     Repair(): Promise<ErrorResponse>;
     getIntegrations(): DSDataServiceIntegration;
     setIntegrations(data: DSDataServiceIntegration): Promise<DSDataService>;
-    getRoles(): DSDataServiceRoles;
-    setRoles(data: DSDataServiceRoles): Promise<DSDataService>;
+    getRoles(): DSDataServiceRole;
+    setRoles(data: DSDataServiceRole): Promise<DSDataService>;
     getSchema(): DSDataServiceSchema;
     setSchema(data: DSDataServiceSchema): Promise<DSDataService>;
     CRUD(): CRUDMethods;
     private createPayload;
     private cleanPayload;
 }
-export declare class DSDataServiceRoles {
+export declare class DSDataServiceRole {
     private app;
     private data;
     private api;
@@ -44,8 +44,8 @@ export declare class DSDataServiceRoles {
     listRoles(): RoleBlock[];
     getRole(name: string): RoleBlock | undefined;
     createNewRole(name: string, description?: string): RoleBlock;
-    addRole(data: RoleBlock): DSDataServiceRoles;
-    removeRole(name: string): DSDataServiceRoles;
+    addRole(data: RoleBlock): DSDataServiceRole;
+    removeRole(name: string): DSDataServiceRole;
 }
 export declare class DSDataServiceIntegration {
     private app;

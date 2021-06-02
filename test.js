@@ -17,7 +17,7 @@ const PASSWORD = process.env.DATA_STACK_PASSWORD;
     let dataService = await app.DataService('User');
 
     const roles = dataService.getRoles();
-    
+
     console.log(dataService);
   } catch (e) {
     console.error('ERROR !!');
