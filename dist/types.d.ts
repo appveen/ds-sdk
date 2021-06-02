@@ -94,7 +94,7 @@ export declare class DataService {
     name: string | undefined;
     description: string | undefined;
     api: string | undefined;
-    definition: Array<Definition> | undefined;
+    definition: Array<SchemaField>;
     status: string | undefined;
     preHooks: Array<WebHook>;
     webHooks: Array<WebHook>;
@@ -152,29 +152,9 @@ export declare enum RoleMethods {
     REVIEW = "REVIEW",
     SKIP_REVIEW = "SKIP_REVIEW"
 }
-export declare class Definition {
-    name: string | undefined;
-    key: string | undefined;
-    type: string | undefined;
-    properties: DefinitionProperties | undefined;
-}
-export declare class DefinitionProperties {
-    required: boolean;
-    unique: boolean;
-    createOnly: boolean;
-    maxLength: number | undefined;
-    minLength: number | undefined;
-    max: number | undefined;
-    min: number | undefined;
-    pattern: string | undefined;
-    default: string | number | boolean | undefined;
-    relatedTo: string | undefined;
-    schema: string | undefined;
-    constructor(data?: DefinitionProperties);
-}
 export declare class ErrorResponse {
-    statusCode: number;
-    body: object;
+    statusCode?: number;
+    body?: object;
     message?: string;
     constructor(data: ErrorResponse | any);
 }
@@ -200,4 +180,80 @@ export declare class WebHook {
     url: string;
     failMessage: string;
     constructor(data: WebHook);
+}
+export declare class SchemaField {
+    private key;
+    private type;
+    private properties;
+    private definition;
+    constructor(data?: SchemaField);
+    newField(data?: SchemaField): SchemaField;
+    getName(): string | undefined;
+    setName(name: string): void;
+    getKey(): string | undefined;
+    setKey(key: string): void;
+    getType(): SchemaFieldTypes;
+    setType(type: SchemaFieldTypes): SchemaField;
+    addChildField(data: SchemaField): this;
+    removeChildField(name: string): this;
+    getProperties(): SchemaFieldProperties;
+}
+export declare enum SchemaFieldTypes {
+    STRING = "String",
+    NUMBER = "Number",
+    BOOLEAN = "Boolean",
+    DATA = "Data",
+    OBJECT = "Object",
+    ARRAY = "Array",
+    RELATION = "Relation",
+    SCHEMA = "Global",
+    LOCATION = "Geojson"
+}
+export declare class SchemaFieldProperties {
+    private name;
+    private required;
+    private unique;
+    private createOnly;
+    private email;
+    private password;
+    private enum;
+    private tokens;
+    private maxLength;
+    private minLength;
+    private max;
+    private min;
+    private pattern;
+    private default;
+    private relatedTo;
+    private schema;
+    private dateType;
+    constructor(data?: SchemaFieldProperties);
+    getName(): string | undefined;
+    setName(name: string): void;
+    isRequired(): boolean;
+    setRequired(required: boolean): void;
+    isUnique(): boolean;
+    setUnique(unique: boolean): void;
+    isCreateOnly(): boolean;
+    setCreateOnly(createOnly: boolean): void;
+    isEmail(): boolean;
+    setEmail(email: boolean): void;
+    isPassword(): boolean;
+    setPassword(password: boolean): void;
+    getMaxLength(): number | undefined;
+    setMaxLength(maxLength: number): void;
+    getMinLength(): number | undefined;
+    setMinLength(minLength: number): void;
+    getMax(): number | undefined;
+    setMax(max: number): void;
+    getMin(): number | undefined;
+    setMin(min: number): void;
+    getPattern(): string | undefined;
+    setPattern(pattern: string): void;
+    getDefault(): string | undefined;
+    setDefault(value: string): void;
+    getRelatedTo(): string | undefined;
+    setRelatedTo(relatedTo: string): void;
+    getSchema(): string | undefined;
+    setSchema(schema: string): void;
 }

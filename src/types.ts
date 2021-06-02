@@ -1,3 +1,5 @@
+import { camelCase, startCase } from 'lodash';
+
 export class App {
     _id: string | undefined;
     description: string | undefined;
@@ -169,7 +171,7 @@ export class DataService {
     name: string | undefined;
     description: string | undefined;
     api: string | undefined;
-    definition: Array<Definition> | undefined;
+    definition: Array<SchemaField>;
     status: string | undefined;
     preHooks: Array<WebHook>;
     webHooks: Array<WebHook>;
@@ -199,10 +201,34 @@ export class DataService {
         this.name = data?.name;
         this.description = data?.description;
         this.api = data?.api;
-        this.definition = data?.definition;
-        this.preHooks = data?.preHooks || [];
-        this.webHooks = data?.webHooks || [];
+        this.definition = [];
+        this.preHooks = [];
+        this.webHooks = [];
         this.workflowHooks = data?.workflowHooks || { postHooks: { approve: [], discard: [], reject: [], rework: [], submit: [] } };
+        if (data?.definition) {
+            this.definition = data?.definition.map(e => new SchemaField(e));
+        }
+        if (data?.preHooks) {
+            this.preHooks = data?.preHooks.map(e => new WebHook(e));
+        }
+        if (data?.webHooks) {
+            this.webHooks = data?.webHooks.map(e => new WebHook(e));
+        }
+        if (data?.workflowHooks?.postHooks?.approve) {
+            this.workflowHooks.postHooks.approve = data?.workflowHooks?.postHooks?.approve.map(e => new WebHook(e));
+        }
+        if (data?.workflowHooks?.postHooks?.discard) {
+            this.workflowHooks.postHooks.discard = data?.workflowHooks?.postHooks?.discard.map(e => new WebHook(e));
+        }
+        if (data?.workflowHooks?.postHooks?.reject) {
+            this.workflowHooks.postHooks.reject = data?.workflowHooks?.postHooks?.reject.map(e => new WebHook(e));
+        }
+        if (data?.workflowHooks?.postHooks?.rework) {
+            this.workflowHooks.postHooks.rework = data?.workflowHooks?.postHooks?.rework.map(e => new WebHook(e));
+        }
+        if (data?.workflowHooks?.postHooks?.submit) {
+            this.workflowHooks.postHooks.submit = data?.workflowHooks?.postHooks?.submit.map(e => new WebHook(e));
+        }
         this.role = data?.role || { fields: {}, roles: [new RoleBlock()] };
     }
 }
@@ -300,49 +326,14 @@ export enum RoleMethods {
     SKIP_REVIEW = 'SKIP_REVIEW'
 }
 
-
-export class Definition {
-    name: string | undefined;
-    key: string | undefined;
-    type: string | undefined;
-    properties: DefinitionProperties | undefined;
-}
-
-export class DefinitionProperties {
-    required: boolean;
-    unique: boolean;
-    createOnly: boolean;
-    maxLength: number | undefined;
-    minLength: number | undefined;
-    max: number | undefined;
-    min: number | undefined;
-    pattern: string | undefined;
-    default: string | number | boolean | undefined;
-    relatedTo: string | undefined;
-    schema: string | undefined;
-    constructor(data?: DefinitionProperties) {
-        this.required = data?.required || false;
-        this.unique = data?.unique || false;
-        this.createOnly = data?.createOnly || false;
-        this.maxLength = data?.maxLength;
-        this.minLength = data?.minLength;
-        this.max = data?.max;
-        this.min = data?.min;
-        this.pattern = data?.pattern;
-        this.default = data?.default;
-        this.relatedTo = data?.relatedTo;
-        this.schema = data?.schema;
-    }
-}
-
 export class ErrorResponse {
-    statusCode: number;
-    body: object;
+    statusCode?: number;
+    body?: object;
     message?: string;
     constructor(data: ErrorResponse | any) {
-        this.statusCode = data.statusCode;
-        this.body = data.body;
-        this.message = data.statusMessage;
+        this.statusCode = data?.statusCode;
+        this.body = data?.body;
+        this.message = data?.statusMessage;
     }
 }
 
@@ -386,4 +377,240 @@ export class WebHook {
         this.url = data.url;
         this.failMessage = data.failMessage;
     }
+}
+
+
+export class SchemaField {
+    private key: string | undefined;
+    private type: SchemaFieldTypes;
+    private properties: SchemaFieldProperties;
+    private definition: SchemaField[];
+    constructor(data?: SchemaField) {
+        this.key = data?.key;
+        this.type = data?.type || SchemaFieldTypes.STRING;
+        this.properties = new SchemaFieldProperties(data?.properties);
+        this.definition = [];
+        if (data?.definition) {
+            this.definition = data?.definition.map(e => new SchemaField(e));
+        }
+    }
+
+    newField(data?: SchemaField) {
+        return new SchemaField(data);
+    }
+
+    getName() {
+        return this.properties.getName();
+    }
+
+    setName(name: string): void {
+        this.properties.setName(name);
+        this.key = camelCase(name);
+    }
+
+    getKey() {
+        return this.key;
+    }
+
+    setKey(key: string): void {
+        this.key = key;
+        this.setName(startCase(key));
+    }
+
+    getType() {
+        return this.type;
+    }
+
+    setType(type: SchemaFieldTypes): SchemaField {
+        this.type = type;
+        if (this.type === SchemaFieldTypes.ARRAY) {
+            const childField = new SchemaField();
+            childField.setKey('_self');
+            return childField;
+        } else {
+            return this;
+        }
+    }
+
+    addChildField(data: SchemaField) {
+        this.type = SchemaFieldTypes.OBJECT;
+        this.definition.push(data);
+        return this;
+    }
+
+    removeChildField(name: string) {
+        const index = this.definition.findIndex(e => e.getName() === name);
+        this.definition.splice(index, 1);
+        return this;
+    }
+
+    getProperties() {
+        return this.properties;
+    }
+}
+
+export enum SchemaFieldTypes {
+    STRING = 'String',
+    NUMBER = 'Number',
+    BOOLEAN = 'Boolean',
+    DATA = 'Data',
+    OBJECT = 'Object',
+    ARRAY = 'Array',
+    RELATION = 'Relation',
+    SCHEMA = 'Global',
+    LOCATION = 'Geojson',
+}
+
+
+export class SchemaFieldProperties {
+    private name: string | undefined;
+    private required: boolean;
+    private unique: boolean;
+    private createOnly: boolean;
+    private email: boolean;
+    private password: boolean;
+    private enum: string[];
+    private tokens: string[];
+    private maxLength: number | undefined;
+    private minLength: number | undefined;
+    private max: number | undefined;
+    private min: number | undefined;
+    private pattern: string | undefined;
+    private default: string | undefined;
+    private relatedTo: string | undefined;
+    private schema: string | undefined;
+    private dateType: string | undefined;
+
+    constructor(data?: SchemaFieldProperties) {
+        this.name = data?.name;
+        this.required = data?.required || false;
+        this.unique = data?.unique || false;
+        this.createOnly = data?.createOnly || false;
+        this.email = data?.email || false;
+        this.password = data?.password || false;
+        this.enum = data?.enum || [];
+        this.tokens = data?.tokens || [];
+        this.maxLength = data?.maxLength;
+        this.minLength = data?.minLength;
+        this.max = data?.max;
+        this.min = data?.min;
+        this.pattern = data?.pattern;
+        this.default = data?.default;
+        this.relatedTo = data?.relatedTo;
+        this.schema = data?.schema;
+        this.dateType = data?.dateType;
+    }
+
+    public getName(): string | undefined {
+        return this.name;
+    }
+
+    public setName(name: string): void {
+        this.name = name;
+    }
+
+    public isRequired(): boolean {
+        return this.required;
+    }
+
+    public setRequired(required: boolean): void {
+        this.required = required;
+    }
+
+    public isUnique(): boolean {
+        return this.unique;
+    }
+
+    public setUnique(unique: boolean): void {
+        this.unique = unique;
+    }
+
+    public isCreateOnly(): boolean {
+        return this.createOnly;
+    }
+
+    public setCreateOnly(createOnly: boolean): void {
+        this.createOnly = createOnly;
+    }
+
+    public isEmail(): boolean {
+        return this.email;
+    }
+
+    public setEmail(email: boolean): void {
+        this.email = email;
+    }
+
+    public isPassword(): boolean {
+        return this.password;
+    }
+
+    public setPassword(password: boolean): void {
+        this.password = password;
+    }
+
+    public getMaxLength(): number | undefined {
+        return this.maxLength;
+    }
+
+    public setMaxLength(maxLength: number): void {
+        this.maxLength = maxLength;
+    }
+
+    public getMinLength(): number | undefined {
+        return this.minLength;
+    }
+
+    public setMinLength(minLength: number): void {
+        this.minLength = minLength;
+    }
+
+    public getMax(): number | undefined {
+        return this.max;
+    }
+
+    public setMax(max: number): void {
+        this.max = max;
+    }
+
+    public getMin(): number | undefined {
+        return this.min;
+    }
+
+    public setMin(min: number): void {
+        this.min = min;
+    }
+
+    public getPattern(): string | undefined {
+        return this.pattern;
+    }
+
+    public setPattern(pattern: string): void {
+        this.pattern = pattern;
+    }
+
+    public getDefault(): string | undefined {
+        return this.default;
+    }
+
+    public setDefault(value: string): void {
+        this.default = value;
+    }
+
+    public getRelatedTo(): string | undefined {
+        return this.relatedTo;
+    }
+
+    public setRelatedTo(relatedTo: string): void {
+        this.relatedTo = relatedTo;
+    }
+
+    public getSchema(): string | undefined {
+        return this.schema;
+    }
+
+    public setSchema(schema: string): void {
+        this.schema = schema;
+    }
+
 }

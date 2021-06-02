@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CRUDMethods = exports.DSDataServiceIntegration = exports.DSDataServiceRoles = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
+exports.CRUDMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRoles = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
 const got_1 = __importDefault(require("got"));
 const lodash_1 = require("lodash");
 const rxjs_1 = require("rxjs");
@@ -37,34 +37,35 @@ class AuthHandler {
         this.rbacUserTokenDuration = 600;
         this.rbacUserTokenRefresh = false;
         this.bot = false;
-        this.creds = creds;
+        this.creds = new types_1.Credentials(creds);
         this.api = this.creds.host + '/api/a/rbac';
     }
     login() {
-        return new Promise((resolve, reject) => {
-            const payload = { username: this.creds.username, password: this.creds.password };
-            got_1.default.post(this.api + '/login', { json: payload, responseType: 'json' })
-                .then((resp) => {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const payload = { username: this.creds.username, password: this.creds.password };
+                const resp = yield got_1.default.post(this.api + '/login', { json: payload, responseType: 'json' });
                 const data = resp.body;
                 this.patchData(data);
                 if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
+                    console.log('Creating HB Routine');
                     this.createHBRoutine();
                 }
                 if (this.rbacUserTokenRefresh) {
+                    console.log('Creating Refresh Routine');
                     this.createTokenRefreshRoutine();
                 }
-                resolve(new DataStack());
-            })
-                .catch(err => {
-                console.log(err.response);
-                reject(err.response);
-            });
+                return new DataStack();
+            }
+            catch (err) {
+                throw new types_1.ErrorResponse(err.response);
+            }
         });
     }
     authenticateByToken() {
-        return new Promise((resolve, reject) => {
-            got_1.default.get(this.api + '/check', { responseType: 'json' })
-                .then((resp) => {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const resp = yield got_1.default.get(this.api + '/check', { responseType: 'json' });
                 const data = resp.body;
                 this.patchData(data);
                 if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
@@ -73,12 +74,11 @@ class AuthHandler {
                 if (this.rbacUserTokenRefresh) {
                     this.createTokenRefreshRoutine();
                 }
-                resolve(new DataStack());
-            })
-                .catch(err => {
-                console.log(err.response);
-                reject(err.response);
-            });
+                return new DataStack();
+            }
+            catch (err) {
+                throw new types_1.ErrorResponse(err.response);
+            }
         });
     }
     createHBRoutine() {
@@ -212,13 +212,18 @@ class DataStack {
 exports.DataStack = DataStack;
 class DSApp {
     constructor(app) {
-        this.app = app;
+        this.app = new types_1.App(app);
         this.api = authData.creds.host + '/api/a/sm/service';
     }
     ListDataServices() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                const filter = { app: this.app._id };
+                const searchParams = new URLSearchParams();
+                searchParams.append('filter', JSON.stringify(filter));
+                // searchParams.append('draft', 'true');
                 let resp = yield got_1.default.get(this.api, {
+                    searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -240,8 +245,9 @@ class DSApp {
                 const filter = { app: this.app._id, $or: [{ name }, { _id: name }] };
                 const searchParams = new URLSearchParams();
                 searchParams.append('filter', JSON.stringify(filter));
+                // searchParams.append('draft', 'true');
                 let resp = yield got_1.default.get(this.api, {
-                    searchParams: searchParams.toString(),
+                    searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -264,9 +270,10 @@ class DSApp {
 exports.DSApp = DSApp;
 class DSDataService {
     constructor(app, data) {
-        this.app = app;
-        this.data = data;
+        this.app = new types_1.App(app);
+        this.data = new types_1.DataService(data);
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.smApi = authData.creds.host + `/api/a/sm/service`;
     }
     Start() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -365,13 +372,13 @@ class DSDataService {
     setIntegrations(data) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                lodash_1.assignIn(this.data, data.data);
-                let resp = yield got_1.default.put(this.api, {
+                lodash_1.assignIn(this.data, data.getData());
+                let resp = yield got_1.default.put(this.smApi + '/' + this.data._id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
                     responseType: 'json',
-                    json: this.data
+                    json: this.createPayload()
                 });
                 lodash_1.assignIn(this.data, resp.body);
                 return this;
@@ -394,13 +401,13 @@ class DSDataService {
     setRoles(data) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                lodash_1.assignIn(this.data, data.data);
-                let resp = yield got_1.default.put(this.api, {
+                lodash_1.assignIn(this.data, data.getData());
+                let resp = yield got_1.default.put(this.smApi + '/' + this.data._id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
                     responseType: 'json',
-                    json: this.data
+                    json: this.createPayload()
                 });
                 lodash_1.assignIn(this.data, resp.body);
                 return this;
@@ -411,8 +418,61 @@ class DSDataService {
             }
         });
     }
+    getSchema() {
+        try {
+            return new DSDataServiceSchema(this.app, this.data);
+        }
+        catch (err) {
+            console.error('[ERROR] [getSchema]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    setSchema(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                lodash_1.assignIn(this.data, data.getData());
+                let resp = yield got_1.default.put(this.smApi + '/' + this.data._id, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: this.createPayload()
+                });
+                lodash_1.assignIn(this.data, resp.body);
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [setSchema]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
     CRUD() {
         return new CRUDMethods(this.app, this.data);
+    }
+    createPayload() {
+        const data = JSON.parse(JSON.stringify(this.data));
+        this.cleanPayload(data.definition);
+        return data;
+    }
+    cleanPayload(definition) {
+        if (definition) {
+            definition.forEach((item) => {
+                if (item.type === 'Object' || item.type === 'Array') {
+                    this.cleanPayload(item.definition);
+                }
+                else {
+                    if (Array.isArray(item.properties.enum) && item.properties.enum.length == 0) {
+                        delete item.properties.enum;
+                    }
+                    ;
+                    if (Array.isArray(item.properties.tokens) && item.properties.tokens.length == 0) {
+                        delete item.properties.tokens;
+                    }
+                    ;
+                }
+            });
+        }
     }
 }
 exports.DSDataService = DSDataService;
@@ -422,9 +482,12 @@ class DSDataServiceRoles {
         this.data = data;
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
     }
+    getData() {
+        return this.data;
+    }
     listRoles() {
         try {
-            return this.data.role.roles.map(e => new types_1.RoleBlock(e));
+            return this.data.role.roles;
         }
         catch (err) {
             console.error('[ERROR] [listRoles]', err);
@@ -484,9 +547,12 @@ class DSDataServiceIntegration {
         this.data = data;
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
     }
+    getData() {
+        return this.data;
+    }
     listPreHook() {
         try {
-            return this.data.preHooks.map(e => new types_1.WebHook(e));
+            return this.data.preHooks;
         }
         catch (err) {
             console.error('[ERROR] [listPreHook]', err);
@@ -525,7 +591,7 @@ class DSDataServiceIntegration {
     }
     listPostHook() {
         try {
-            return this.data.webHooks.map(e => new types_1.WebHook(e));
+            return this.data.webHooks;
         }
         catch (err) {
             console.error('[ERROR] [listPostHook]', err);
@@ -564,6 +630,84 @@ class DSDataServiceIntegration {
     }
 }
 exports.DSDataServiceIntegration = DSDataServiceIntegration;
+class DSDataServiceSchema {
+    constructor(app, data) {
+        this.app = app;
+        this.data = data;
+        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+    }
+    getData() {
+        return this.data;
+    }
+    getJSONSchema() {
+        try {
+            return this.data.preHooks;
+        }
+        catch (err) {
+            console.error('[ERROR] [listPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    setJSONSchema(schema) {
+        try {
+            return this.data.preHooks;
+        }
+        catch (err) {
+            console.error('[ERROR] [listPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    newField(data) {
+        try {
+            return new types_1.SchemaField(data);
+        }
+        catch (err) {
+            console.error('[ERROR] [getPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    getField(name) {
+        try {
+            return this.data.definition.find(e => e.getName() === name);
+        }
+        catch (err) {
+            console.error('[ERROR] [getPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    addField(data) {
+        try {
+            this.data.definition.push(data);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [addPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    patchField(data) {
+        try {
+            this.data.definition.push(data);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [addPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    removeField(name) {
+        try {
+            const index = this.data.preHooks.findIndex(e => e.name === name);
+            this.data.preHooks.splice(index, 1);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [removePreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+}
+exports.DSDataServiceSchema = DSDataServiceSchema;
 class CRUDMethods {
     constructor(app, data) {
         this.app = app;
@@ -573,11 +717,14 @@ class CRUDMethods {
     Count() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.get(this.api + '/count', {
+                const searchParams = new URLSearchParams();
+                searchParams.append('countOnly', 'true');
+                let resp = yield got_1.default.get(this.api, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
-                    responseType: 'json'
+                    responseType: 'json',
+                    searchParams
                 });
                 return resp.body;
             }
@@ -610,7 +757,7 @@ class CRUDMethods {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
-                    searchParams: searchParams.toString(),
+                    searchParams: searchParams,
                     responseType: 'json',
                 });
                 return resp.body.map((item) => {
@@ -695,4 +842,4 @@ class CRUDMethods {
     }
 }
 exports.CRUDMethods = CRUDMethods;
-exports.default = { authenticateByCredentials, authenticateByToken };
+exports.default = { authenticateByCredentials, authenticateByToken, SchemaFieldTypes: types_1.SchemaFieldTypes };

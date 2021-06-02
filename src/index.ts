@@ -1,7 +1,7 @@
 import got from 'got';
 import { assignIn } from 'lodash';
 import { interval } from 'rxjs';
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SchemaFieldTypes } from './types';
 
 var authData: AuthHandler;
 
@@ -14,7 +14,6 @@ export function authenticateByToken(creds: Credentials): Promise<DataStack> {
     authData = new AuthHandler(creds);
     return authData.authenticateByToken();
 }
-
 
 class AuthHandler {
 
@@ -39,53 +38,43 @@ class AuthHandler {
     private api: string;
 
     constructor(creds: Credentials) {
-        this.creds = creds;
+        this.creds = new Credentials(creds);
         this.api = this.creds.host + '/api/a/rbac';
     }
 
-    login(): Promise<DataStack> {
-        return new Promise((resolve, reject) => {
+    async login(): Promise<DataStack> {
+        try {
             const payload = { username: this.creds.username, password: this.creds.password };
-            got.post(this.api + '/login', { json: payload, responseType: 'json' })
-                .then((resp: any) => {
-                    const data = resp.body;
-                    this.patchData(data);
-                    if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
-                        this.createHBRoutine();
-                    }
-                    if (this.rbacUserTokenRefresh) {
-                        this.createTokenRefreshRoutine();
-                    }
-                    resolve(new DataStack());
-
-                })
-                .catch(err => {
-                    console.log(err.response)
-                    reject(err.response);
-                });
-        });
+            const resp = await got.post(this.api + '/login', { json: payload, responseType: 'json' });
+            const data = resp.body;
+            this.patchData(data);
+            if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
+                this.createHBRoutine();
+            }
+            if (this.rbacUserTokenRefresh) {
+                this.createTokenRefreshRoutine();
+            }
+            return new DataStack();
+        } catch (err) {
+            throw new ErrorResponse(err.response);
+        }
     }
 
-    authenticateByToken(): Promise<DataStack> {
-        return new Promise((resolve, reject) => {
-            got.get(this.api + '/check', { responseType: 'json' })
-                .then((resp: any) => {
-                    const data = resp.body;
-                    this.patchData(data);
-                    if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
-                        this.createHBRoutine();
-                    }
-                    if (this.rbacUserTokenRefresh) {
-                        this.createTokenRefreshRoutine();
-                    }
-                    resolve(new DataStack());
-
-                })
-                .catch(err => {
-                    console.log(err.response)
-                    reject(err.response);
-                });
-        });
+    async authenticateByToken(): Promise<DataStack> {
+        try {
+            const resp = await got.get(this.api + '/check', { responseType: 'json' });
+            const data = resp.body;
+            this.patchData(data);
+            if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
+                this.createHBRoutine();
+            }
+            if (this.rbacUserTokenRefresh) {
+                this.createTokenRefreshRoutine();
+            }
+            return new DataStack();
+        } catch (err) {
+            throw new ErrorResponse(err.response);
+        }
     }
 
     private async createHBRoutine() {
@@ -217,13 +206,18 @@ export class DSApp {
     app: App;
     api: string;
     constructor(app: App) {
-        this.app = app;
+        this.app = new App(app);
         this.api = authData.creds.host + '/api/a/sm/service';
     }
 
     public async ListDataServices(): Promise<DSDataService[]> {
         try {
+            const filter = { app: this.app._id };
+            const searchParams = new URLSearchParams();
+            searchParams.append('filter', JSON.stringify(filter));
+            // searchParams.append('draft', 'true');
             let resp = await got.get(this.api, {
+                searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -243,8 +237,9 @@ export class DSApp {
             const filter = { app: this.app._id, $or: [{ name }, { _id: name }] };
             const searchParams = new URLSearchParams();
             searchParams.append('filter', JSON.stringify(filter));
+            // searchParams.append('draft', 'true');
             let resp = await got.get(this.api, {
-                searchParams: searchParams.toString(),
+                searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -266,11 +261,13 @@ export class DSApp {
 export class DSDataService {
     app: App;
     data: DataService;
-    api: string;
+    private api: string;
+    private smApi: string;
     constructor(app: App, data: DataService) {
-        this.app = app;
-        this.data = data;
+        this.app = new App(app);
+        this.data = new DataService(data);
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.smApi = authData.creds.host + `/api/a/sm/service`;
     }
 
     public async Start(): Promise<ErrorResponse> {
@@ -359,13 +356,13 @@ export class DSDataService {
 
     public async setIntegrations(data: DSDataServiceIntegration): Promise<DSDataService> {
         try {
-            assignIn(this.data, data.data);
-            let resp = await got.put(this.api, {
+            assignIn(this.data, data.getData());
+            let resp = await got.put(this.smApi + '/' + this.data._id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
                 responseType: 'json',
-                json: this.data
+                json: this.createPayload()
             }) as any;
             assignIn(this.data, resp.body);
             return this;
@@ -375,24 +372,24 @@ export class DSDataService {
         }
     }
 
-    public getRoles(): DSDataServiceRoles {
+    public getRoles(): DSDataServiceRole {
         try {
-            return new DSDataServiceRoles(this.app, this.data);
+            return new DSDataServiceRole(this.app, this.data);
         } catch (err) {
             console.error('[ERROR] [getRoles]', err);
             throw new ErrorResponse(err.response);
         }
     }
 
-    public async setRoles(data: DSDataServiceRoles): Promise<DSDataService> {
+    public async setRoles(data: DSDataServiceRole): Promise<DSDataService> {
         try {
-            assignIn(this.data, data.data);
-            let resp = await got.put(this.api, {
+            assignIn(this.data, data.getData());
+            let resp = await got.put(this.smApi + '/' + this.data._id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
                 responseType: 'json',
-                json: this.data
+                json: this.createPayload()
             }) as any;
             assignIn(this.data, resp.body);
             return this;
@@ -402,31 +399,85 @@ export class DSDataService {
         }
     }
 
+    public getSchema(): DSDataServiceSchema {
+        try {
+            return new DSDataServiceSchema(this.app, this.data);
+        } catch (err) {
+            console.error('[ERROR] [getSchema]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async setSchema(data: DSDataServiceSchema): Promise<DSDataService> {
+        try {
+            assignIn(this.data, data.getData());
+            let resp = await got.put(this.smApi + '/' + this.data._id, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: this.createPayload()
+            }) as any;
+            assignIn(this.data, resp.body);
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [setSchema]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
     public CRUD() {
         return new CRUDMethods(this.app, this.data);
     }
+
+    private createPayload() {
+        const data = JSON.parse(JSON.stringify(this.data));
+        this.cleanPayload(data.definition);
+        return data;
+    }
+
+    private cleanPayload(definition: Array<any>) {
+        if (definition) {
+            definition.forEach((item: any) => {
+                if (item.type === 'Object' || item.type === 'Array') {
+                    this.cleanPayload(item.definition);
+                } else {
+                    if (Array.isArray(item.properties.enum) && item.properties.enum.length == 0) {
+                        delete item.properties.enum;
+                    };
+                    if (Array.isArray(item.properties.tokens) && item.properties.tokens.length == 0) {
+                        delete item.properties.tokens;
+                    };
+                }
+            });
+        }
+    }
 }
 
-export class DSDataServiceRoles {
-    app: App;
-    data: DataService;
-    api: string;
+export class DSDataServiceRole {
+    private app: App;
+    private data: DataService;
+    private api: string;
     constructor(app: App, data: DataService) {
         this.app = app;
         this.data = data;
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
     }
 
-    public listRoles() {
+    public getData(): DataService {
+        return this.data;
+    }
+
+    public listRoles(): RoleBlock[] {
         try {
-            return this.data.role.roles.map(e => new RoleBlock(e));
+            return this.data.role.roles;
         } catch (err) {
             console.error('[ERROR] [listRoles]', err);
             throw new ErrorResponse(err.response);
         }
     }
 
-    public getRole(name: string) {
+    public getRole(name: string): RoleBlock | undefined {
         try {
             return this.data.role.roles.find(e => e.name === name);
         } catch (err) {
@@ -435,7 +486,7 @@ export class DSDataServiceRoles {
         }
     }
 
-    public createNewRole(name: string, description?: string) {
+    public createNewRole(name: string, description?: string): RoleBlock {
         try {
             const temp = new RoleBlock();
             temp.setName(name);
@@ -447,7 +498,7 @@ export class DSDataServiceRoles {
         }
     }
 
-    public addRole(data: RoleBlock) {
+    public addRole(data: RoleBlock): DSDataServiceRole {
         try {
             if (!(data instanceof RoleBlock)) {
                 throw new Error('Please create a new role first');
@@ -460,7 +511,7 @@ export class DSDataServiceRoles {
         }
     }
 
-    public removeRole(name: string) {
+    public removeRole(name: string): DSDataServiceRole {
         try {
             const index = this.data.role.roles.findIndex(e => e.name === name);
             this.data.role.roles.splice(index, 1);
@@ -474,25 +525,29 @@ export class DSDataServiceRoles {
 
 
 export class DSDataServiceIntegration {
-    app: App;
-    data: DataService;
-    api: string;
+    private app: App;
+    private data: DataService;
+    private api: string;
     constructor(app: App, data: DataService) {
         this.app = app;
         this.data = data;
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
     }
 
-    public listPreHook() {
+    public getData(): DataService {
+        return this.data;
+    }
+
+    public listPreHook(): WebHook[] {
         try {
-            return this.data.preHooks.map(e => new WebHook(e));
+            return this.data.preHooks;
         } catch (err) {
             console.error('[ERROR] [listPreHook]', err);
             throw new ErrorResponse(err.response);
         }
     }
 
-    public getPreHook(name: string) {
+    public getPreHook(name: string): WebHook | undefined {
         try {
             return this.data.preHooks.find(e => e.name === name);
         } catch (err) {
@@ -501,7 +556,7 @@ export class DSDataServiceIntegration {
         }
     }
 
-    public addPreHook(data: WebHook) {
+    public addPreHook(data: WebHook): DSDataServiceIntegration {
         try {
             this.data.preHooks.push(data);
             return this;
@@ -511,7 +566,7 @@ export class DSDataServiceIntegration {
         }
     }
 
-    public removePreHook(name: string) {
+    public removePreHook(name: string): DSDataServiceIntegration {
         try {
             const index = this.data.preHooks.findIndex(e => e.name === name);
             this.data.preHooks.splice(index, 1);
@@ -522,16 +577,16 @@ export class DSDataServiceIntegration {
         }
     }
 
-    public listPostHook() {
+    public listPostHook(): WebHook[] {
         try {
-            return this.data.webHooks.map(e => new WebHook(e));
+            return this.data.webHooks;
         } catch (err) {
             console.error('[ERROR] [listPostHook]', err);
             throw new ErrorResponse(err.response);
         }
     }
 
-    public getPostHook(name: string) {
+    public getPostHook(name: string): WebHook | undefined {
         try {
             return this.data.webHooks.find(e => e.name === name);
         } catch (err) {
@@ -540,7 +595,7 @@ export class DSDataServiceIntegration {
         }
     }
 
-    public addPostHook(data: WebHook) {
+    public addPostHook(data: WebHook): DSDataServiceIntegration {
         try {
             this.data.webHooks.push(data);
             return this;
@@ -550,13 +605,95 @@ export class DSDataServiceIntegration {
         }
     }
 
-    public removePostHook(name: string) {
+    public removePostHook(name: string): DSDataServiceIntegration {
         try {
             const index = this.data.webHooks.findIndex(e => e.name === name);
             this.data.webHooks.splice(index, 1);
             return this;
         } catch (err) {
             console.error('[ERROR] [removePostHook]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+}
+
+export class DSDataServiceSchema {
+    private app: App;
+    private data: DataService;
+    private api: string;
+    constructor(app: App, data: DataService) {
+        this.app = app;
+        this.data = data;
+        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+    }
+
+    public getData(): DataService {
+        return this.data;
+    }
+
+    public getJSONSchema() {
+        try {
+            return this.data.preHooks;
+        } catch (err) {
+            console.error('[ERROR] [listPreHook]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public setJSONSchema(schema: any) {
+        try {
+            return this.data.preHooks;
+        } catch (err) {
+            console.error('[ERROR] [listPreHook]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public newField(data?: SchemaField): SchemaField {
+        try {
+            return new SchemaField(data);
+        } catch (err) {
+            console.error('[ERROR] [getPreHook]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public getField(name: string): SchemaField | undefined {
+        try {
+            return this.data.definition.find(e => e.getName() === name);
+        } catch (err) {
+            console.error('[ERROR] [getPreHook]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public addField(data: SchemaField) {
+        try {
+            this.data.definition.push(data);
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [addPreHook]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public patchField(data: SchemaField) {
+        try {
+            this.data.definition.push(data);
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [addPreHook]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public removeField(name: string) {
+        try {
+            const index = this.data.preHooks.findIndex(e => e.name === name);
+            this.data.preHooks.splice(index, 1);
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [removePreHook]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -574,11 +711,14 @@ export class CRUDMethods {
 
     public async Count(): Promise<number> {
         try {
-            let resp = await got.get(this.api + '/count', {
+            const searchParams = new URLSearchParams();
+            searchParams.append('countOnly', 'true');
+            let resp = await got.get(this.api, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
-                responseType: 'json'
+                responseType: 'json',
+                searchParams
             }) as any;
             return resp.body;
         } catch (err) {
@@ -609,7 +749,7 @@ export class CRUDMethods {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
-                searchParams: searchParams.toString(),
+                searchParams: searchParams,
                 responseType: 'json',
             }) as any;
             return resp.body.map((item: any) => {
@@ -684,4 +824,4 @@ export class CRUDMethods {
     }
 }
 
-export default { authenticateByCredentials, authenticateByToken };
+export default { authenticateByCredentials, authenticateByToken, SchemaFieldTypes: SchemaFieldTypes };

@@ -7,27 +7,18 @@ const PASSWORD = process.env.DATA_STACK_PASSWORD;
 
 (async function () {
   try {
-    const dataStack = await SDK.authenticateByCredentials({
+    let dataStack = await SDK.authenticateByCredentials({
       host: HOST,
       username: USERNAME,
       password: PASSWORD,
     });
 
-    const app = await dataStack.App('Jugnu');
-    const dataService = await app.DataService('User');
+    let app = await dataStack.App('Jugnu');
+    let dataService = await app.DataService('User');
+
     const roles = dataService.getRoles();
-    const role = roles.createNewRole('hello World').enableCreate().enableEdit().enableDelete();
-    roles.addRole(role);
     
-    const records = await dataService.CRUD().List();
-
-    dataStack = null;
-    app = null;
-    dataService = null;
-    records = null;
-
-    // console.log(status)
-    console.log(records);
+    console.log(dataService);
   } catch (e) {
     console.error('ERROR !!');
     console.error(e);

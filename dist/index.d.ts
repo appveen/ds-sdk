@@ -1,4 +1,4 @@
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SchemaFieldTypes } from './types';
 export declare function authenticateByCredentials(creds: Credentials): Promise<DataStack>;
 export declare function authenticateByToken(creds: Credentials): Promise<DataStack>;
 export declare class DataStack {
@@ -17,7 +17,8 @@ export declare class DSApp {
 export declare class DSDataService {
     app: App;
     data: DataService;
-    api: string;
+    private api;
+    private smApi;
     constructor(app: App, data: DataService);
     Start(): Promise<ErrorResponse>;
     Stop(): Promise<ErrorResponse>;
@@ -28,32 +29,52 @@ export declare class DSDataService {
     setIntegrations(data: DSDataServiceIntegration): Promise<DSDataService>;
     getRoles(): DSDataServiceRoles;
     setRoles(data: DSDataServiceRoles): Promise<DSDataService>;
+    getSchema(): DSDataServiceSchema;
+    setSchema(data: DSDataServiceSchema): Promise<DSDataService>;
     CRUD(): CRUDMethods;
+    private createPayload;
+    private cleanPayload;
 }
 export declare class DSDataServiceRoles {
-    app: App;
-    data: DataService;
-    api: string;
+    private app;
+    private data;
+    private api;
     constructor(app: App, data: DataService);
+    getData(): DataService;
     listRoles(): RoleBlock[];
     getRole(name: string): RoleBlock | undefined;
     createNewRole(name: string, description?: string): RoleBlock;
-    addRole(data: RoleBlock): this;
-    removeRole(name: string): this;
+    addRole(data: RoleBlock): DSDataServiceRoles;
+    removeRole(name: string): DSDataServiceRoles;
 }
 export declare class DSDataServiceIntegration {
-    app: App;
-    data: DataService;
-    api: string;
+    private app;
+    private data;
+    private api;
     constructor(app: App, data: DataService);
+    getData(): DataService;
     listPreHook(): WebHook[];
     getPreHook(name: string): WebHook | undefined;
-    addPreHook(data: WebHook): this;
-    removePreHook(name: string): this;
+    addPreHook(data: WebHook): DSDataServiceIntegration;
+    removePreHook(name: string): DSDataServiceIntegration;
     listPostHook(): WebHook[];
     getPostHook(name: string): WebHook | undefined;
-    addPostHook(data: WebHook): this;
-    removePostHook(name: string): this;
+    addPostHook(data: WebHook): DSDataServiceIntegration;
+    removePostHook(name: string): DSDataServiceIntegration;
+}
+export declare class DSDataServiceSchema {
+    private app;
+    private data;
+    private api;
+    constructor(app: App, data: DataService);
+    getData(): DataService;
+    getJSONSchema(): WebHook[];
+    setJSONSchema(schema: any): WebHook[];
+    newField(data?: SchemaField): SchemaField;
+    getField(name: string): SchemaField | undefined;
+    addField(data: SchemaField): this;
+    patchField(data: SchemaField): this;
+    removeField(name: string): this;
 }
 export declare class CRUDMethods {
     app: App;
@@ -70,5 +91,6 @@ export declare class CRUDMethods {
 declare const _default: {
     authenticateByCredentials: typeof authenticateByCredentials;
     authenticateByToken: typeof authenticateByToken;
+    SchemaFieldTypes: typeof SchemaFieldTypes;
 };
 export default _default;
