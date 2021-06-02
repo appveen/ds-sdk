@@ -17,6 +17,7 @@
     "rxjs": "^7.1.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.170",
     "dotenv": "^10.0.0",
     "eslint": "^7.27.0",
     "eslint-config-prettier": "^8.3.0",

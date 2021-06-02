@@ -12,8 +12,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CRUDMethods = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
+exports.CRUDMethods = exports.DSDataServiceIntegration = exports.DSDataServiceRoles = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
 const got_1 = __importDefault(require("got"));
+const lodash_1 = require("lodash");
 const rxjs_1 = require("rxjs");
 const types_1 = require("./types");
 var authData;
@@ -352,11 +353,217 @@ class DSDataService {
             }
         });
     }
+    getIntegrations() {
+        try {
+            return new DSDataServiceIntegration(this.app, this.data);
+        }
+        catch (err) {
+            console.error('[ERROR] [getIntegrations]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    setIntegrations(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                lodash_1.assignIn(this.data, data.data);
+                let resp = yield got_1.default.put(this.api, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: this.data
+                });
+                lodash_1.assignIn(this.data, resp.body);
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [setIntegrations]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    getRoles() {
+        try {
+            return new DSDataServiceRoles(this.app, this.data);
+        }
+        catch (err) {
+            console.error('[ERROR] [getRoles]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    setRoles(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                lodash_1.assignIn(this.data, data.data);
+                let resp = yield got_1.default.put(this.api, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: this.data
+                });
+                lodash_1.assignIn(this.data, resp.body);
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [setRoles]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
     CRUD() {
         return new CRUDMethods(this.app, this.data);
     }
 }
 exports.DSDataService = DSDataService;
+class DSDataServiceRoles {
+    constructor(app, data) {
+        this.app = app;
+        this.data = data;
+        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+    }
+    listRoles() {
+        try {
+            return this.data.role.roles.map(e => new types_1.RoleBlock(e));
+        }
+        catch (err) {
+            console.error('[ERROR] [listRoles]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    getRole(name) {
+        try {
+            return this.data.role.roles.find(e => e.name === name);
+        }
+        catch (err) {
+            console.error('[ERROR] [getRole]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    createNewRole(name, description) {
+        try {
+            const temp = new types_1.RoleBlock();
+            temp.setName(name);
+            temp.setDescription(description);
+            return temp;
+        }
+        catch (err) {
+            console.error('[ERROR] [getRole]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    addRole(data) {
+        try {
+            if (!(data instanceof types_1.RoleBlock)) {
+                throw new Error('Please create a new role first');
+            }
+            this.data.role.roles.push(data);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [addRole]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    removeRole(name) {
+        try {
+            const index = this.data.role.roles.findIndex(e => e.name === name);
+            this.data.role.roles.splice(index, 1);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [removeRole]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+}
+exports.DSDataServiceRoles = DSDataServiceRoles;
+class DSDataServiceIntegration {
+    constructor(app, data) {
+        this.app = app;
+        this.data = data;
+        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+    }
+    listPreHook() {
+        try {
+            return this.data.preHooks.map(e => new types_1.WebHook(e));
+        }
+        catch (err) {
+            console.error('[ERROR] [listPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    getPreHook(name) {
+        try {
+            return this.data.preHooks.find(e => e.name === name);
+        }
+        catch (err) {
+            console.error('[ERROR] [getPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    addPreHook(data) {
+        try {
+            this.data.preHooks.push(data);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [addPreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    removePreHook(name) {
+        try {
+            const index = this.data.preHooks.findIndex(e => e.name === name);
+            this.data.preHooks.splice(index, 1);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [removePreHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    listPostHook() {
+        try {
+            return this.data.webHooks.map(e => new types_1.WebHook(e));
+        }
+        catch (err) {
+            console.error('[ERROR] [listPostHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    getPostHook(name) {
+        try {
+            return this.data.webHooks.find(e => e.name === name);
+        }
+        catch (err) {
+            console.error('[ERROR] [getPostHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    addPostHook(data) {
+        try {
+            this.data.webHooks.push(data);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [addPostHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    removePostHook(name) {
+        try {
+            const index = this.data.webHooks.findIndex(e => e.name === name);
+            this.data.webHooks.splice(index, 1);
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [removePostHook]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+}
+exports.DSDataServiceIntegration = DSDataServiceIntegration;
 class CRUDMethods {
     constructor(app, data) {
         this.app = app;

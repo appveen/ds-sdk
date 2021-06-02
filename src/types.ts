@@ -170,6 +170,29 @@ export class DataService {
     description: string | undefined;
     api: string | undefined;
     definition: Array<Definition> | undefined;
+    status: string | undefined;
+    preHooks: Array<WebHook>;
+    webHooks: Array<WebHook>;
+    workflowHooks: {
+        postHooks: {
+            approve: Array<WebHook>;
+            discard: Array<WebHook>;
+            reject: Array<WebHook>;
+            rework: Array<WebHook>;
+            submit: Array<WebHook>;
+        }
+    };
+    role: {
+        fields: {
+            [key: string]: {
+                _t: string,
+                _p: {
+                    [key: string]: string
+                }
+            }
+        },
+        roles: Array<RoleBlock>
+    }
 
     constructor(data?: DataService) {
         this._id = data?._id;
@@ -177,7 +200,104 @@ export class DataService {
         this.description = data?.description;
         this.api = data?.api;
         this.definition = data?.definition;
+        this.preHooks = data?.preHooks || [];
+        this.webHooks = data?.webHooks || [];
+        this.workflowHooks = data?.workflowHooks || { postHooks: { approve: [], discard: [], reject: [], rework: [], submit: [] } };
+        this.role = data?.role || { fields: {}, roles: [new RoleBlock()] };
     }
+}
+
+export class RoleBlock {
+    id: string;
+    name: string | undefined;
+    description: string | undefined;
+    manageRole: boolean;
+    viewRole: boolean;
+    skipReviewRole: boolean;
+    operations: Array<{ method: RoleMethods }>
+
+    constructor(data?: RoleBlock) {
+        this.id = data?.id || 'P' + Math.ceil(Math.random() * 10000000000);
+        this.name = data?.name;
+        this.description = data?.description;
+        this.manageRole = data?.manageRole || false;
+        this.viewRole = data?.viewRole || false;
+        this.skipReviewRole = data?.skipReviewRole || false;
+        this.operations = data?.operations || [{ method: RoleMethods.GET }];
+    }
+
+    setName(name: string): void {
+        this.name = name;
+    }
+
+    setDescription(description: string | undefined): void {
+        this.description = description;
+    }
+
+    enableCreate(): RoleBlock {
+        this.operations.push({ method: RoleMethods.POST });
+        return this;
+    }
+
+    disableCreate(): RoleBlock {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.POST);
+        this.operations.splice(index, 1);
+        return this;
+    }
+
+    enableEdit(): RoleBlock {
+        this.operations.push({ method: RoleMethods.PUT });
+        return this;
+    }
+
+    disableEdit(): RoleBlock {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.PUT);
+        this.operations.splice(index, 1);
+        return this;
+    }
+
+    enableDelete(): RoleBlock {
+        this.operations.push({ method: RoleMethods.DELETE });
+        return this;
+    }
+
+    disableDelete(): RoleBlock {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.DELETE);
+        this.operations.splice(index, 1);
+        return this;
+    }
+
+    enableReview(): RoleBlock {
+        this.operations.push({ method: RoleMethods.REVIEW });
+        return this;
+    }
+
+    disableReview(): RoleBlock {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.REVIEW);
+        this.operations.splice(index, 1);
+        return this;
+    }
+
+    enableSkipReview(): RoleBlock {
+        this.operations.push({ method: RoleMethods.SKIP_REVIEW });
+        return this;
+    }
+
+    disableSkipReview(): RoleBlock {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.SKIP_REVIEW);
+        this.operations.splice(index, 1);
+        return this;
+    }
+}
+
+
+export enum RoleMethods {
+    GET = 'GET',
+    PUT = 'PUT',
+    POST = 'POST',
+    DELETE = 'DELETE',
+    REVIEW = 'REVIEW',
+    SKIP_REVIEW = 'SKIP_REVIEW'
 }
 
 
@@ -253,5 +373,17 @@ export class Metadata {
         this.lastUpdatedBy = data.lastUpdatedBy || '';
         this.createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
         this.version = data.version;
+    }
+}
+
+
+export class WebHook {
+    name: string;
+    url: string;
+    failMessage: string;
+    constructor(data: WebHook) {
+        this.name = data.name;
+        this.url = data.url;
+        this.failMessage = data.failMessage;
     }
 }

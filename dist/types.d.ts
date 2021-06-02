@@ -95,7 +95,62 @@ export declare class DataService {
     description: string | undefined;
     api: string | undefined;
     definition: Array<Definition> | undefined;
+    status: string | undefined;
+    preHooks: Array<WebHook>;
+    webHooks: Array<WebHook>;
+    workflowHooks: {
+        postHooks: {
+            approve: Array<WebHook>;
+            discard: Array<WebHook>;
+            reject: Array<WebHook>;
+            rework: Array<WebHook>;
+            submit: Array<WebHook>;
+        };
+    };
+    role: {
+        fields: {
+            [key: string]: {
+                _t: string;
+                _p: {
+                    [key: string]: string;
+                };
+            };
+        };
+        roles: Array<RoleBlock>;
+    };
     constructor(data?: DataService);
+}
+export declare class RoleBlock {
+    id: string;
+    name: string | undefined;
+    description: string | undefined;
+    manageRole: boolean;
+    viewRole: boolean;
+    skipReviewRole: boolean;
+    operations: Array<{
+        method: RoleMethods;
+    }>;
+    constructor(data?: RoleBlock);
+    setName(name: string): void;
+    setDescription(description: string | undefined): void;
+    enableCreate(): RoleBlock;
+    disableCreate(): RoleBlock;
+    enableEdit(): RoleBlock;
+    disableEdit(): RoleBlock;
+    enableDelete(): RoleBlock;
+    disableDelete(): RoleBlock;
+    enableReview(): RoleBlock;
+    disableReview(): RoleBlock;
+    enableSkipReview(): RoleBlock;
+    disableSkipReview(): RoleBlock;
+}
+export declare enum RoleMethods {
+    GET = "GET",
+    PUT = "PUT",
+    POST = "POST",
+    DELETE = "DELETE",
+    REVIEW = "REVIEW",
+    SKIP_REVIEW = "SKIP_REVIEW"
 }
 export declare class Definition {
     name: string | undefined;
@@ -139,4 +194,10 @@ export declare class Metadata {
         release: string;
     } | undefined;
     constructor(data: Metadata);
+}
+export declare class WebHook {
+    name: string;
+    url: string;
+    failMessage: string;
+    constructor(data: WebHook);
 }

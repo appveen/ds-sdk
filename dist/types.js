@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Metadata = exports.DataStackDocument = exports.ErrorResponse = exports.DefinitionProperties = exports.Definition = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
+exports.WebHook = exports.Metadata = exports.DataStackDocument = exports.ErrorResponse = exports.DefinitionProperties = exports.Definition = exports.RoleMethods = exports.RoleBlock = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
 class App {
     constructor(data) {
         this._id = data === null || data === void 0 ? void 0 : data._id;
@@ -108,9 +108,85 @@ class DataService {
         this.description = data === null || data === void 0 ? void 0 : data.description;
         this.api = data === null || data === void 0 ? void 0 : data.api;
         this.definition = data === null || data === void 0 ? void 0 : data.definition;
+        this.preHooks = (data === null || data === void 0 ? void 0 : data.preHooks) || [];
+        this.webHooks = (data === null || data === void 0 ? void 0 : data.webHooks) || [];
+        this.workflowHooks = (data === null || data === void 0 ? void 0 : data.workflowHooks) || { postHooks: { approve: [], discard: [], reject: [], rework: [], submit: [] } };
+        this.role = (data === null || data === void 0 ? void 0 : data.role) || { fields: {}, roles: [new RoleBlock()] };
     }
 }
 exports.DataService = DataService;
+class RoleBlock {
+    constructor(data) {
+        this.id = (data === null || data === void 0 ? void 0 : data.id) || 'P' + Math.ceil(Math.random() * 10000000000);
+        this.name = data === null || data === void 0 ? void 0 : data.name;
+        this.description = data === null || data === void 0 ? void 0 : data.description;
+        this.manageRole = (data === null || data === void 0 ? void 0 : data.manageRole) || false;
+        this.viewRole = (data === null || data === void 0 ? void 0 : data.viewRole) || false;
+        this.skipReviewRole = (data === null || data === void 0 ? void 0 : data.skipReviewRole) || false;
+        this.operations = (data === null || data === void 0 ? void 0 : data.operations) || [{ method: RoleMethods.GET }];
+    }
+    setName(name) {
+        this.name = name;
+    }
+    setDescription(description) {
+        this.description = description;
+    }
+    enableCreate() {
+        this.operations.push({ method: RoleMethods.POST });
+        return this;
+    }
+    disableCreate() {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.POST);
+        this.operations.splice(index, 1);
+        return this;
+    }
+    enableEdit() {
+        this.operations.push({ method: RoleMethods.PUT });
+        return this;
+    }
+    disableEdit() {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.PUT);
+        this.operations.splice(index, 1);
+        return this;
+    }
+    enableDelete() {
+        this.operations.push({ method: RoleMethods.DELETE });
+        return this;
+    }
+    disableDelete() {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.DELETE);
+        this.operations.splice(index, 1);
+        return this;
+    }
+    enableReview() {
+        this.operations.push({ method: RoleMethods.REVIEW });
+        return this;
+    }
+    disableReview() {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.REVIEW);
+        this.operations.splice(index, 1);
+        return this;
+    }
+    enableSkipReview() {
+        this.operations.push({ method: RoleMethods.SKIP_REVIEW });
+        return this;
+    }
+    disableSkipReview() {
+        const index = this.operations.findIndex(e => e.method === RoleMethods.SKIP_REVIEW);
+        this.operations.splice(index, 1);
+        return this;
+    }
+}
+exports.RoleBlock = RoleBlock;
+var RoleMethods;
+(function (RoleMethods) {
+    RoleMethods["GET"] = "GET";
+    RoleMethods["PUT"] = "PUT";
+    RoleMethods["POST"] = "POST";
+    RoleMethods["DELETE"] = "DELETE";
+    RoleMethods["REVIEW"] = "REVIEW";
+    RoleMethods["SKIP_REVIEW"] = "SKIP_REVIEW";
+})(RoleMethods = exports.RoleMethods || (exports.RoleMethods = {}));
 class Definition {
 }
 exports.Definition = Definition;
@@ -156,3 +232,11 @@ class Metadata {
     }
 }
 exports.Metadata = Metadata;
+class WebHook {
+    constructor(data) {
+        this.name = data.name;
+        this.url = data.url;
+        this.failMessage = data.failMessage;
+    }
+}
+exports.WebHook = WebHook;
