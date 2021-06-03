@@ -99,6 +99,7 @@ class ListOptions {
         this.page = data.page;
         this.count = data.count;
         this.filter = data.filter;
+        this.expand = data.expand || false;
     }
 }
 exports.ListOptions = ListOptions;

@@ -157,12 +157,14 @@ export class ListOptions {
     page: number | undefined;
     count: number | undefined;
     filter: object | undefined;
+    expand: boolean;
     constructor(data: ListOptions) {
         this.select = data.select;
         this.sort = data.sort;
         this.page = data.page;
         this.count = data.count;
         this.filter = data.filter;
+        this.expand = data.expand || false;
     }
 }
 

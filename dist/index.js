@@ -748,6 +748,9 @@ class DataMethods {
                 if (options === null || options === void 0 ? void 0 : options.page) {
                     searchParams.append('page', options.page.toString());
                 }
+                if (options === null || options === void 0 ? void 0 : options.expand) {
+                    searchParams.append('expand', options.expand.toString());
+                }
                 if (options === null || options === void 0 ? void 0 : options.filter) {
                     searchParams.append('filter', JSON.stringify(options.filter));
                 }

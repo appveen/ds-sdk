@@ -87,6 +87,7 @@ export declare class ListOptions {
     page: number | undefined;
     count: number | undefined;
     filter: object | undefined;
+    expand: boolean;
     constructor(data: ListOptions);
 }
 export declare class DataService {

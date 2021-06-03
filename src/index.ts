@@ -742,6 +742,9 @@ export class DataMethods {
             if (options?.page) {
                 searchParams.append('page', options.page.toString());
             }
+            if (options?.expand) {
+                searchParams.append('expand', options.expand.toString());
+            }
             if (options?.filter) {
                 searchParams.append('filter', JSON.stringify(options.filter));
             }
