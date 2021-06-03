@@ -32,7 +32,7 @@ const PASSWORD = 'johndoehasapassword';
 
     const app = await dataStack.App('Adam');
     const dataService = await app.DataService('Employee');
-    const record = await dataService.CRUD().Get('EMP1001');
+    const record = await dataService.Data().Get('EMP1001');
 
     console.log(record);
   } catch (e) {
@@ -59,7 +59,7 @@ const TOKEN = 'dgdoieruyiueyr794iryewyrye7rbyewr';
 
     const app = await dataStack.App('Adam');
     const dataService = await app.DataService('Employee');
-    const record = await dataService.CRUD().Get('EMP1001');
+    const record = await dataService.Data().Get('EMP1001');
 
     console.log(record);
   } catch (e) {
@@ -168,9 +168,9 @@ Returns a Promise giving a [DSDataService array](#DSDataService).
 
 The object contains utility methods to manage a Data Service.
 
-#### CRUD()
+#### DataAPIs()
 
-Returns an [CRUDMethods object](#CRUDMethods) to do CRUD operations that Data Service.
+Returns an [DataMethods object](#DataMethods) to do Data operations that Data Service.
 
 #### Start()
 
@@ -231,6 +231,148 @@ Returns a Promise giving a [DSDataService object](#DSDataService) if the operati
 Type: `DSDataServiceSchema`
 
 After making changes to the returned object by [getSchema()](<#getSchema()>) method set that object here in order for the change to be applied.
+
+<hr>
+
+### DataMethods
+
+This Object contains methods to manage data of a Data Service.
+
+#### CountRecords(filter: object): Promise<number>
+
+Returns a Promise giving a `number` if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### filter
+
+Type: `object` The filter get proper count.
+
+#### ListRecords(options: [ListOptions](#ListOptions)): Promise<DataStackDocument[]>
+
+Returns a Promise giving a [DataStackDocument array](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### options
+
+Type: `ListOptions` The options to list records.
+
+#### GetRecord(id: string): Promise<DataStackDocument>
+
+Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### id
+
+Type: `string` The ID of the record.
+
+#### UpdateRecord(id: string, data: object): Promise<DataStackDocument>
+
+Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### id
+
+Type: `string` The ID of the record.
+
+##### data
+
+Type: `object` The data the should to be updated.
+
+#### CreateRecord(data: object): Promise<DataStackDocument>
+
+Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### data
+
+Type: `object` The data the should to be created.
+
+#### DeleteRecord(id: string): Promise<string>
+
+Returns a Promise giving a message:`string` if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### id
+
+Type: `string` The ID of the record.
+
+#### DoMath(): [MathAPI](#MathAPI)
+
+Returns a [MathAPI object](#MathAPI) to set math operations.
+
+#### ApplyMath(id: string, math: [MathAPI](#MathAPI)): Promise<DataStackDocument>
+
+Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### id
+
+Type: `string` The ID of the record.
+
+##### math
+
+Type: `MathAPI` The Math Object that has the operations.
+
+<hr>
+
+### ListOptions
+
+#### select: string
+
+To show only selected fields in records.
+
+#### sort: string
+
+To set the sorting order of records.
+
+#### page: number
+
+For pagination.
+
+#### count: number
+
+To Limit the no of records.
+
+#### filter: object
+
+To filter the records.
+
+#### expand: boolean
+
+To expand the docs if contains relation.
+
+<hr>
+
+### MathAPI
+
+#### SelectField(path: string): MathAPI;
+
+Selects the field to apply math operation.
+
+Returns the same MathAPI Object to continue API chaning.
+
+##### path
+
+Type: `string`
+
+Path of the Field.
+
+#### Increment(num: number): MathAPI;
+
+Increment the value to the selected field.
+
+Returns the same MathAPI Object to continue API chaning.
+
+##### num
+
+Type: `number`
+
+The value to increment. Give negative values to decrement.
+
+#### Multiply(num: number): MathAPI;
+
+Multiply the value to the selected field.
+
+Returns the same MathAPI Object to continue API chaning.
+
+##### num
+
+Type: `number`
+
+The value to multiply.
 
 <hr>
 
@@ -354,27 +496,81 @@ The Name of the role that needs to be removed.
 
 <hr>
 
-### ErrorResponse
+### RoleBlock
 
-The object is return whenever some error occurs.
+The Object used by Roles.
 
-#### statusCode
+#### setName(name: string): void
 
-Type: `number`
+This Method sets Name of the Role.
 
-The status code returned by the application.
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
 
-#### body
+#### setDescription(description?: string): void
 
-Type: `object`
+This Method sets Description of the Role.
 
-The response body send by the application in case if error.
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
 
-#### message
+#### enableCreate(): RoleBlock
 
-Type: `string`
+This Method Enables Create Permission in the Role.
 
-The error message if the error occured in the SDK.
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### disableCreate(): RoleBlock
+
+This Method Disables Create Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### enableEdit(): RoleBlock
+
+This Method Enables Edit Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### disableEdit(): RoleBlock
+
+This Method Disables Edit Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### enableDelete(): RoleBlock
+
+This Method Enables Delete Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### disableDelete(): RoleBlock
+
+This Method Disables Delete Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### enableReview(): RoleBlock
+
+This Method Enables Review Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### disableReview(): RoleBlock
+
+This Method Disables Review Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### enableSkipReview(): RoleBlock
+
+This Method Enables Skip Review Permission in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
+
+#### disableSkipReview(): RoleBlock
+
+This RoleBlock Disables Skip Review RoleBlock in the Role.
+
+Returns [RoleBlock object](#RoleBlock) to continue api chaning.
 
 <hr>
 
@@ -399,6 +595,30 @@ A URL of the Web-Hook.
 Type: `string`
 
 Optional error message to show, when the hook URL is down.
+
+<hr>
+
+### ErrorResponse
+
+The object is return whenever some error occurs.
+
+#### statusCode
+
+Type: `number`
+
+The status code returned by the application.
+
+#### body
+
+Type: `object`
+
+The response body send by the application in case if error.
+
+#### message
+
+Type: `string`
+
+The error message if the error occured in the SDK.
 
 <hr>
 
