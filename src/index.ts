@@ -426,8 +426,8 @@ export class DSDataService {
         }
     }
 
-    public CRUD() {
-        return new CRUDMethods(this.app, this.data);
+    public DataAPIs() {
+        return new DataMethods(this.app, this.data);
     }
 
     private createPayload() {
@@ -699,7 +699,7 @@ export class DSDataServiceSchema {
     }
 }
 
-export class CRUDMethods {
+export class DataMethods {
     app: App;
     data: DataService;
     api: string;
@@ -709,7 +709,7 @@ export class CRUDMethods {
         this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api;
     }
 
-    public async Count(): Promise<number> {
+    public async CountRecords(): Promise<number> {
         try {
             const searchParams = new URLSearchParams();
             searchParams.append('countOnly', 'true');
@@ -727,7 +727,7 @@ export class CRUDMethods {
         }
     }
 
-    public async List(options: ListOptions): Promise<DataStackDocument[]> {
+    public async ListRecords(options: ListOptions): Promise<DataStackDocument[]> {
         try {
             const searchParams = new URLSearchParams();
             if (options?.select) {
@@ -761,7 +761,7 @@ export class CRUDMethods {
         }
     }
 
-    public async Get(id: string): Promise<DataStackDocument> {
+    public async GetRecord(id: string): Promise<DataStackDocument> {
         try {
             let resp = await got.get(this.api + '/' + id, {
                 headers: {
@@ -776,7 +776,7 @@ export class CRUDMethods {
         }
     }
 
-    public async Put(id: string, data: any): Promise<DataStackDocument> {
+    public async UpdateRecord(id: string, data: any): Promise<DataStackDocument> {
         try {
             let resp = await got.put(this.api + '/' + id, {
                 headers: {
@@ -792,7 +792,7 @@ export class CRUDMethods {
         }
     }
 
-    public async Post(data: any): Promise<DataStackDocument> {
+    public async CreateRecord(data: any): Promise<DataStackDocument> {
         try {
             let resp = await got.post(this.api, {
                 headers: {
@@ -808,7 +808,7 @@ export class CRUDMethods {
         }
     }
 
-    public async Delete(id: string): Promise<ErrorResponse> {
+    public async DeleteRecord(id: string): Promise<ErrorResponse> {
         try {
             let resp = await got.delete(this.api + '/' + id, {
                 headers: {
@@ -822,6 +822,64 @@ export class CRUDMethods {
             throw new ErrorResponse(err.response);
         }
     }
+
+    public DoMath(): MathAPI {
+        try {
+            return new MathAPI();
+        } catch (err) {
+            console.error('[ERROR] [Delete]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async ApplyMath(id: string, math: MathAPI): Promise<ErrorResponse> {
+        try {
+            let resp = await got.put(this.api + '/' + id + '/math', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: math.CreatePayload()
+            }) as any;
+            return new ErrorResponse({ statusCode: 200, body: resp.body });
+        } catch (err) {
+            console.error('[ERROR] [Delete]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
 }
 
-export default { authenticateByCredentials, authenticateByToken, SchemaFieldTypes: SchemaFieldTypes };
+export class MathAPI {
+    private selectedField: string | undefined;
+    private operations: any;
+    constructor() {
+        this.operations = { $inc: {}, $mul: {} };
+    }
+
+    SelectField(name: string) {
+        this.selectedField = name;
+        return this;
+    }
+
+    Increment(num: number) {
+        if (!this.selectedField) {
+            throw new Error('Please select the field first while using Math API');
+        }
+        this.operations.$inc[this.selectedField] = num;
+        return this;
+    }
+
+    Multiply(num: number) {
+        if (!this.selectedField) {
+            throw new Error('Please select the field first while using Math API');
+        }
+        this.operations.$mul[this.selectedField] = num;
+        return this;
+    }
+
+    CreatePayload() {
+        return this.operations;
+    }
+}
+
+export default { authenticateByCredentials, authenticateByToken };

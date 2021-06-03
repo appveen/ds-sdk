@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CRUDMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRole = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
+exports.MathAPI = exports.DataMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRole = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
 const got_1 = __importDefault(require("got"));
 const lodash_1 = require("lodash");
 const rxjs_1 = require("rxjs");
@@ -445,8 +445,8 @@ class DSDataService {
             }
         });
     }
-    CRUD() {
-        return new CRUDMethods(this.app, this.data);
+    DataAPIs() {
+        return new DataMethods(this.app, this.data);
     }
     createPayload() {
         const data = JSON.parse(JSON.stringify(this.data));
@@ -706,13 +706,13 @@ class DSDataServiceSchema {
     }
 }
 exports.DSDataServiceSchema = DSDataServiceSchema;
-class CRUDMethods {
+class DataMethods {
     constructor(app, data) {
         this.app = app;
         this.data = data;
         this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api;
     }
-    Count() {
+    CountRecords() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const searchParams = new URLSearchParams();
@@ -732,7 +732,7 @@ class CRUDMethods {
             }
         });
     }
-    List(options) {
+    ListRecords(options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const searchParams = new URLSearchParams();
@@ -768,7 +768,7 @@ class CRUDMethods {
             }
         });
     }
-    Get(id) {
+    GetRecord(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 let resp = yield got_1.default.get(this.api + '/' + id, {
@@ -785,7 +785,7 @@ class CRUDMethods {
             }
         });
     }
-    Put(id, data) {
+    UpdateRecord(id, data) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 let resp = yield got_1.default.put(this.api + '/' + id, {
@@ -803,7 +803,7 @@ class CRUDMethods {
             }
         });
     }
-    Post(data) {
+    CreateRecord(data) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 let resp = yield got_1.default.post(this.api, {
@@ -821,7 +821,7 @@ class CRUDMethods {
             }
         });
     }
-    Delete(id) {
+    DeleteRecord(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 let resp = yield got_1.default.delete(this.api + '/' + id, {
@@ -838,6 +838,60 @@ class CRUDMethods {
             }
         });
     }
+    DoMath() {
+        try {
+            return new MathAPI();
+        }
+        catch (err) {
+            console.error('[ERROR] [Delete]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    ApplyMath(id, math) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.put(this.api + '/' + id + '/math', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: math.CreatePayload()
+                });
+                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+            }
+            catch (err) {
+                console.error('[ERROR] [Delete]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
 }
-exports.CRUDMethods = CRUDMethods;
-exports.default = { authenticateByCredentials, authenticateByToken, SchemaFieldTypes: types_1.SchemaFieldTypes };
+exports.DataMethods = DataMethods;
+class MathAPI {
+    constructor() {
+        this.operations = { $inc: {}, $mul: {} };
+    }
+    SelectField(name) {
+        this.selectedField = name;
+        return this;
+    }
+    Increment(num) {
+        if (!this.selectedField) {
+            throw new Error('Please select the field first while using Math API');
+        }
+        this.operations.$inc[this.selectedField] = num;
+        return this;
+    }
+    Multiply(num) {
+        if (!this.selectedField) {
+            throw new Error('Please select the field first while using Math API');
+        }
+        this.operations.$mul[this.selectedField] = num;
+        return this;
+    }
+    CreatePayload() {
+        return this.operations;
+    }
+}
+exports.MathAPI = MathAPI;
+exports.default = { authenticateByCredentials, authenticateByToken };

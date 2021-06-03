@@ -1,4 +1,4 @@
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SchemaFieldTypes } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField } from './types';
 export declare function authenticateByCredentials(creds: Credentials): Promise<DataStack>;
 export declare function authenticateByToken(creds: Credentials): Promise<DataStack>;
 export declare class DataStack {
@@ -31,7 +31,7 @@ export declare class DSDataService {
     setRoles(data: DSDataServiceRole): Promise<DSDataService>;
     getSchema(): DSDataServiceSchema;
     setSchema(data: DSDataServiceSchema): Promise<DSDataService>;
-    CRUD(): CRUDMethods;
+    DataAPIs(): DataMethods;
     private createPayload;
     private cleanPayload;
 }
@@ -76,21 +76,31 @@ export declare class DSDataServiceSchema {
     patchField(data: SchemaField): this;
     removeField(name: string): this;
 }
-export declare class CRUDMethods {
+export declare class DataMethods {
     app: App;
     data: DataService;
     api: string;
     constructor(app: App, data: DataService);
-    Count(): Promise<number>;
-    List(options: ListOptions): Promise<DataStackDocument[]>;
-    Get(id: string): Promise<DataStackDocument>;
-    Put(id: string, data: any): Promise<DataStackDocument>;
-    Post(data: any): Promise<DataStackDocument>;
-    Delete(id: string): Promise<ErrorResponse>;
+    CountRecords(): Promise<number>;
+    ListRecords(options: ListOptions): Promise<DataStackDocument[]>;
+    GetRecord(id: string): Promise<DataStackDocument>;
+    UpdateRecord(id: string, data: any): Promise<DataStackDocument>;
+    CreateRecord(data: any): Promise<DataStackDocument>;
+    DeleteRecord(id: string): Promise<ErrorResponse>;
+    DoMath(): MathAPI;
+    ApplyMath(id: string, math: MathAPI): Promise<ErrorResponse>;
+}
+export declare class MathAPI {
+    private selectedField;
+    private operations;
+    constructor();
+    SelectField(name: string): this;
+    Increment(num: number): this;
+    Multiply(num: number): this;
+    CreatePayload(): any;
 }
 declare const _default: {
     authenticateByCredentials: typeof authenticateByCredentials;
     authenticateByToken: typeof authenticateByToken;
-    SchemaFieldTypes: typeof SchemaFieldTypes;
 };
 export default _default;

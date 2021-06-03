@@ -15,10 +15,10 @@ const PASSWORD = process.env.DATA_STACK_PASSWORD;
 
     let app = await dataStack.App('Jugnu');
     let dataService = await app.DataService('User');
-
-    const roles = dataService.getRoles();
-
-    console.log(dataService);
+    const math = dataService.DataAPIs().DoMath();
+    math.SelectField('amount').Increment(-100).SelectField('balance').Multiply(10).Increment(434);
+    dataService.DataAPIs().ApplyMath('', math);
+    console.log(math.CreatePayload());
   } catch (e) {
     console.error('ERROR !!');
     console.error(e);
