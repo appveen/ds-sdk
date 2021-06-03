@@ -87,14 +87,14 @@ export declare class DataMethods {
     UpdateRecord(id: string, data: any): Promise<DataStackDocument>;
     CreateRecord(data: any): Promise<DataStackDocument>;
     DeleteRecord(id: string): Promise<ErrorResponse>;
-    DoMath(): MathAPI;
-    ApplyMath(id: string, math: MathAPI): Promise<ErrorResponse>;
+    CreateMath(): MathAPI;
+    ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;
 }
 export declare class MathAPI {
     private selectedField;
     private operations;
     constructor();
-    SelectField(name: string): this;
+    SelectField(path: string): this;
     Increment(num: number): this;
     Multiply(num: number): this;
     CreatePayload(): any;

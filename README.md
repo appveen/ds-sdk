@@ -290,7 +290,7 @@ Returns a Promise giving a message:`string` if the operation is success, else wi
 
 Type: `string` The ID of the record.
 
-#### DoMath(): [MathAPI](#MathAPI)
+#### CreateMath(): [MathAPI](#MathAPI)
 
 Returns a [MathAPI object](#MathAPI) to set math operations.
 

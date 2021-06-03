@@ -838,7 +838,7 @@ class DataMethods {
             }
         });
     }
-    DoMath() {
+    CreateMath() {
         try {
             return new MathAPI();
         }
@@ -857,7 +857,7 @@ class DataMethods {
                     responseType: 'json',
                     json: math.CreatePayload()
                 });
-                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+                return new types_1.DataStackDocument(resp.body);
             }
             catch (err) {
                 console.error('[ERROR] [Delete]', err);
@@ -871,8 +871,8 @@ class MathAPI {
     constructor() {
         this.operations = { $inc: {}, $mul: {} };
     }
-    SelectField(name) {
-        this.selectedField = name;
+    SelectField(path) {
+        this.selectedField = path;
         return this;
     }
     Increment(num) {

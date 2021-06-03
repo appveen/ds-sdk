@@ -823,7 +823,7 @@ export class DataMethods {
         }
     }
 
-    public DoMath(): MathAPI {
+    public CreateMath(): MathAPI {
         try {
             return new MathAPI();
         } catch (err) {
@@ -832,7 +832,7 @@ export class DataMethods {
         }
     }
 
-    public async ApplyMath(id: string, math: MathAPI): Promise<ErrorResponse> {
+    public async ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument> {
         try {
             let resp = await got.put(this.api + '/' + id + '/math', {
                 headers: {
@@ -841,7 +841,7 @@ export class DataMethods {
                 responseType: 'json',
                 json: math.CreatePayload()
             }) as any;
-            return new ErrorResponse({ statusCode: 200, body: resp.body });
+            return new DataStackDocument(resp.body);
         } catch (err) {
             console.error('[ERROR] [Delete]', err);
             throw new ErrorResponse(err.response);
@@ -856,8 +856,8 @@ export class MathAPI {
         this.operations = { $inc: {}, $mul: {} };
     }
 
-    SelectField(name: string) {
-        this.selectedField = name;
+    SelectField(path: string) {
+        this.selectedField = path;
         return this;
     }
 
