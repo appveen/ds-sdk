@@ -32,7 +32,7 @@ const PASSWORD = 'johndoehasapassword';
 
     const app = await dataStack.App('Adam');
     const dataService = await app.DataService('Employee');
-    const record = await dataService.Data().Get('EMP1001');
+    const record = await dataService.DataAPIs().GetRecord('EMP1001');
 
     console.log(record);
   } catch (e) {
@@ -59,7 +59,7 @@ const TOKEN = 'dgdoieruyiueyr794iryewyrye7rbyewr';
 
     const app = await dataStack.App('Adam');
     const dataService = await app.DataService('Employee');
-    const record = await dataService.Data().Get('EMP1001');
+    const record = await dataService.DataAPIs().GetRecord('EMP1001');
 
     console.log(record);
   } catch (e) {
@@ -67,6 +67,38 @@ const TOKEN = 'dgdoieruyiueyr794iryewyrye7rbyewr';
   }
 })();
 ```
+
+## Example 3
+
+Using Math API
+
+```javascript
+const SDK = require('@appveen/ds-sdk');
+const HOST = 'https://cloud.appveen.com';
+const USERNAME = 'johndoe@appveen.com';
+const PASSWORD = 'johndoehasapassword';
+
+(async function () {
+  try {
+    const dataStack = await SDK.authenticateByCredentials({
+      host: HOST,
+      username: USERNAME,
+      password: PASSWORD,
+    });
+
+    const app = await dataStack.App('Adam');
+    const dataService = await app.DataService('Employee');
+    const math = dataService.DataAPIs().CreateMath();
+    math.SelectField('salary').Multiply(1.2); // Increment Salary by 20%
+    const updatedRecord = await dataService.DataAPIs().ApplyMath('EMP1001', math);
+    
+    console.log(updatedRecord);
+  } catch (e) {
+    console.error(e);
+  }
+})();
+```
+
 
 ## APIs
 
