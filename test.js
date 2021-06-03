@@ -14,11 +14,12 @@ const PASSWORD = process.env.DATA_STACK_PASSWORD;
     });
 
     let app = await dataStack.App('Jugnu');
-    let dataService = await app.DataService('User');
-    const math = dataService.DataAPIs().DoMath();
-    math.SelectField('amount').Increment(-100).SelectField('balance').Multiply(10).Increment(434);
-    dataService.DataAPIs().ApplyMath('', math);
+    let dataService = await app.DataService('Employee');
+    const math = dataService.DataAPIs().CreateMath();
+    math.SelectField('salary').Increment(5000).Multiply(1.2);
     console.log(math.CreatePayload());
+    // const record = await dataService.DataAPIs().ApplyMath('USE1003', math);
+    // console.log(record);
   } catch (e) {
     console.error('ERROR !!');
     console.error(e);
