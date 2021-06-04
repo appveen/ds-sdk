@@ -856,7 +856,8 @@ export class MathAPI {
     private selectedField: string | undefined;
     private operations: any;
     constructor() {
-        this.operations = { $inc: {}, $mul: {} };
+        // this.operations = { $inc: {}, $mul: {} };
+        this.operations = [];
     }
 
     SelectField(path: string) {
@@ -868,7 +869,8 @@ export class MathAPI {
         if (!this.selectedField) {
             throw new Error('Please select the field first while using Math API');
         }
-        this.operations.$inc[this.selectedField] = num;
+        // this.operations.$inc[this.selectedField] = num;
+        this.operations.push({ $inc: { [this.selectedField]: num } });
         return this;
     }
 
@@ -876,7 +878,8 @@ export class MathAPI {
         if (!this.selectedField) {
             throw new Error('Please select the field first while using Math API');
         }
-        this.operations.$mul[this.selectedField] = num;
+        // this.operations.$mul[this.selectedField] = num;
+        this.operations.push({ $mul: { [this.selectedField]: num } });
         return this;
     }
 
