@@ -872,7 +872,8 @@ class DataMethods {
 exports.DataMethods = DataMethods;
 class MathAPI {
     constructor() {
-        this.operations = { $inc: {}, $mul: {} };
+        // this.operations = { $inc: {}, $mul: {} };
+        this.operations = [];
     }
     SelectField(path) {
         this.selectedField = path;
@@ -882,14 +883,16 @@ class MathAPI {
         if (!this.selectedField) {
             throw new Error('Please select the field first while using Math API');
         }
-        this.operations.$inc[this.selectedField] = num;
+        // this.operations.$inc[this.selectedField] = num;
+        this.operations.push({ $inc: { [this.selectedField]: num } });
         return this;
     }
     Multiply(num) {
         if (!this.selectedField) {
             throw new Error('Please select the field first while using Math API');
         }
-        this.operations.$mul[this.selectedField] = num;
+        // this.operations.$mul[this.selectedField] = num;
+        this.operations.push({ $mul: { [this.selectedField]: num } });
         return this;
     }
     CreatePayload() {
