@@ -39,6 +39,7 @@ class AuthHandler {
         this.bot = false;
         this.creds = new types_1.Credentials(creds);
         this.api = this.creds.host + '/api/a/rbac';
+        this.defaultTimezone = 'Zulu';
     }
     login() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -164,6 +165,7 @@ class AuthHandler {
         this.rbacUserTokenRefresh = (data === null || data === void 0 ? void 0 : data.rbacUserTokenRefresh) || false;
         this.serverTime = data === null || data === void 0 ? void 0 : data.serverTime;
         this.bot = data === null || data === void 0 ? void 0 : data.bot;
+        this.defaultTimezone = (data === null || data === void 0 ? void 0 : data.defaultTimezone) || 'Zulu';
     }
 }
 class DataStack {
@@ -206,12 +208,88 @@ class DataStack {
             }
         });
     }
+    CreateApp(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.post(this.api, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: {
+                        _id: name,
+                        defaultTimezone: authData.defaultTimezone,
+                    }
+                });
+                return new DSApp(resp.body);
+            }
+            catch (err) {
+                console.error('[ERROR] [App]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    DeleteApp(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.delete(this.api + '/' + name, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [App]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
 }
 exports.DataStack = DataStack;
 class DSApp {
     constructor(app) {
         this.app = new types_1.App(app);
         this.api = authData.creds.host + '/api/a/sm/service';
+        this.managementAPIs = {
+            serviceStop: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/stop',
+            serviceStart: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/start'
+        };
+    }
+    StartAllDataServices() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.put(this.managementAPIs.serviceStart, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [DataService]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    StopAllDataServices() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.put(this.managementAPIs.serviceStop, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [DataService]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
     }
     ListDataServices() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -264,6 +342,23 @@ class DSApp {
             }
         });
     }
+    CreateDataService(name, description) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.post(this.api, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return new DSDataService(this.app, resp.body);
+            }
+            catch (err) {
+                console.error('[ERROR] [DataService]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
 }
 exports.DSApp = DSApp;
 class DSDataService {
@@ -272,6 +367,83 @@ class DSDataService {
         this.data = new types_1.DataService(data);
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
         this.smApi = authData.creds.host + `/api/a/sm/service`;
+        if (this.data.HasDraft()) {
+            this.FetchDraft();
+            this._isDraft = true;
+        }
+        else {
+            this._isDraft = false;
+        }
+    }
+    FetchDraft() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const searchParams = new URLSearchParams();
+                searchParams.append('draft', 'true');
+                let resp = yield got_1.default.get(this.smApi + '/' + this.data._id, {
+                    searchParams,
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                this.data = new types_1.DataService(resp.body);
+            }
+            catch (err) {
+                console.error('[ERROR] [FetchDraft]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    IsDraft() {
+        try {
+            return this._isDraft;
+        }
+        catch (err) {
+            console.error('[ERROR] [IsDraft]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    DiscardDraft() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.delete(this.api + '/draftDelete', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                resp = (yield got_1.default.get(this.smApi + '/' + this.data._id, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                }));
+                this.data = new types_1.DataService(resp.body);
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [DiscardDraft]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    Delete() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.delete(this.smApi + '/' + this.data._id, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return new DSApp(this.app);
+            }
+            catch (err) {
+                console.error('[ERROR] [Delete]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
     }
     Start() {
         return __awaiter(this, void 0, void 0, function* () {

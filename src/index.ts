@@ -31,6 +31,7 @@ class AuthHandler {
     rbacUserTokenDuration: number = 600;
     rbacUserTokenRefresh: boolean = false;
     serverTime: number | undefined;
+    defaultTimezone: string;
     bot: boolean = false;
 
     private hbRoutine: any;
@@ -40,6 +41,7 @@ class AuthHandler {
     constructor(creds: Credentials) {
         this.creds = new Credentials(creds);
         this.api = this.creds.host + '/api/a/rbac';
+        this.defaultTimezone = 'Zulu';
     }
 
     async login(): Promise<DataStack> {
@@ -156,6 +158,7 @@ class AuthHandler {
         this.rbacUserTokenRefresh = data?.rbacUserTokenRefresh || false;
         this.serverTime = data?.serverTime;
         this.bot = data?.bot;
+        this.defaultTimezone = data?.defaultTimezone || 'Zulu';
     }
 }
 
@@ -200,14 +203,82 @@ export class DataStack {
         }
     }
 
+    public async CreateApp(name: string): Promise<DSApp> {
+        try {
+            let resp = await got.post(this.api, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: {
+                    _id: name,
+                    defaultTimezone: authData.defaultTimezone,
+                }
+            }) as any;
+            return new DSApp(resp.body);
+        } catch (err) {
+            console.error('[ERROR] [App]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async DeleteApp(name: string): Promise<DataStack> {
+        try {
+            let resp = await got.delete(this.api + '/' + name, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [App]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
 }
 
 export class DSApp {
     app: App;
     api: string;
+    private managementAPIs: any;
     constructor(app: App) {
         this.app = new App(app);
         this.api = authData.creds.host + '/api/a/sm/service';
+        this.managementAPIs = {
+            serviceStop: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/stop',
+            serviceStart: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/start'
+        };
+    }
+
+    public async StartAllDataServices(): Promise<DSApp> {
+        try {
+            let resp = await got.put(this.managementAPIs.serviceStart, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [DataService]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async StopAllDataServices(): Promise<DSApp> {
+        try {
+            let resp = await got.put(this.managementAPIs.serviceStop, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [DataService]', err);
+            throw new ErrorResponse(err.response);
+        }
     }
 
     public async ListDataServices(): Promise<DSDataService[]> {
@@ -255,6 +326,21 @@ export class DSApp {
             throw new ErrorResponse(err.response);
         }
     }
+
+    public async CreateDataService(name: string, description?: string): Promise<DSDataService> {
+        try {
+            let resp = await got.post(this.api, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return new DSDataService(this.app, resp.body);
+        } catch (err) {
+            console.error('[ERROR] [DataService]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
 }
 
 
@@ -263,11 +349,83 @@ export class DSDataService {
     data: DataService;
     private api: string;
     private smApi: string;
+    private _isDraft: boolean;
     constructor(app: App, data: DataService) {
         this.app = new App(app);
         this.data = new DataService(data);
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
         this.smApi = authData.creds.host + `/api/a/sm/service`;
+
+        if (this.data.HasDraft()) {
+            this.FetchDraft();
+            this._isDraft = true;
+        } else {
+            this._isDraft = false;
+        }
+    }
+
+    private async FetchDraft() {
+        try {
+            const searchParams = new URLSearchParams();
+            searchParams.append('draft', 'true');
+            let resp = await got.get(this.smApi + '/' + this.data._id, {
+                searchParams,
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            this.data = new DataService(resp.body);
+        } catch (err) {
+            console.error('[ERROR] [FetchDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public IsDraft(): boolean {
+        try {
+            return this._isDraft;
+        } catch (err) {
+            console.error('[ERROR] [IsDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async DiscardDraft(): Promise<DSDataService> {
+        try {
+            let resp = await got.delete(this.api + '/draftDelete', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            resp = await got.get(this.smApi + '/' + this.data._id, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            this.data = new DataService(resp.body);
+            return this;
+        } catch (err) {
+            console.error('[ERROR] [DiscardDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async Delete(): Promise<DSApp> {
+        try {
+            let resp = await got.delete(this.smApi + '/' + this.data._id, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return new DSApp(this.app);
+        } catch (err) {
+            console.error('[ERROR] [Delete]', err);
+            throw new ErrorResponse(err.response);
+        }
     }
 
     public async Start(): Promise<ErrorResponse> {

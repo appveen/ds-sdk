@@ -6,20 +6,31 @@ export declare class DataStack {
     constructor();
     ListApps(): Promise<DSApp[]>;
     App(name: string): Promise<DSApp>;
+    CreateApp(name: string): Promise<DSApp>;
+    DeleteApp(name: string): Promise<DataStack>;
 }
 export declare class DSApp {
     app: App;
     api: string;
+    private managementAPIs;
     constructor(app: App);
+    StartAllDataServices(): Promise<DSApp>;
+    StopAllDataServices(): Promise<DSApp>;
     ListDataServices(): Promise<DSDataService[]>;
     DataService(name: string): Promise<DSDataService>;
+    CreateDataService(name: string, description?: string): Promise<DSDataService>;
 }
 export declare class DSDataService {
     app: App;
     data: DataService;
     private api;
     private smApi;
+    private _isDraft;
     constructor(app: App, data: DataService);
+    private FetchDraft;
+    IsDraft(): boolean;
+    DiscardDraft(): Promise<DSDataService>;
+    Delete(): Promise<DSApp>;
     Start(): Promise<ErrorResponse>;
     Stop(): Promise<ErrorResponse>;
     ScaleUp(): Promise<ErrorResponse>;

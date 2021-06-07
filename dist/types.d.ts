@@ -119,7 +119,10 @@ export declare class DataService {
         };
         roles: Array<RoleBlock>;
     };
+    draftVersion?: number | undefined;
+    version?: number;
     constructor(data?: DataService);
+    HasDraft(): boolean;
 }
 export declare class RoleBlock {
     id: string;

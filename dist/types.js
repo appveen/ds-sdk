@@ -139,6 +139,20 @@ class DataService {
             this.workflowHooks.postHooks.submit = (_x = (_w = data === null || data === void 0 ? void 0 : data.workflowHooks) === null || _w === void 0 ? void 0 : _w.postHooks) === null || _x === void 0 ? void 0 : _x.submit.map(e => new WebHook(e));
         }
         this.role = (data === null || data === void 0 ? void 0 : data.role) || { fields: {}, roles: [new RoleBlock()] };
+        this.draftVersion = data === null || data === void 0 ? void 0 : data.draftVersion;
+        this.version = (data === null || data === void 0 ? void 0 : data.version) || 1;
+    }
+    HasDraft() {
+        try {
+            if (typeof this.draftVersion === 'number') {
+                return true;
+            }
+            return false;
+        }
+        catch (err) {
+            console.error('[ERROR] [Start]', err);
+            throw new ErrorResponse(err.response);
+        }
     }
 }
 exports.DataService = DataService;

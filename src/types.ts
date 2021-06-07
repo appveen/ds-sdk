@@ -197,7 +197,8 @@ export class DataService {
         },
         roles: Array<RoleBlock>
     }
-
+    draftVersion?: number | undefined;
+    version?: number;
     constructor(data?: DataService) {
         this._id = data?._id;
         this.name = data?.name;
@@ -232,6 +233,20 @@ export class DataService {
             this.workflowHooks.postHooks.submit = data?.workflowHooks?.postHooks?.submit.map(e => new WebHook(e));
         }
         this.role = data?.role || { fields: {}, roles: [new RoleBlock()] };
+        this.draftVersion = data?.draftVersion;
+        this.version = data?.version || 1;
+    }
+
+    public HasDraft(): boolean {
+        try {
+            if (typeof this.draftVersion === 'number') {
+                return true;
+            }
+            return false;
+        } catch (err) {
+            console.error('[ERROR] [Start]', err);
+            throw new ErrorResponse(err.response);
+        }
     }
 }
 
