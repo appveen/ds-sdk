@@ -841,7 +841,7 @@ class DataMethods {
             }
         });
     }
-    CreateMath() {
+    PrepareMath() {
         try {
             return new MathAPI();
         }

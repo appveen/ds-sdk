@@ -88,7 +88,7 @@ const PASSWORD = 'johndoehasapassword';
 
     const app = await dataStack.App('Adam');
     const dataService = await app.DataService('Employee');
-    const math = dataService.DataAPIs().CreateMath();
+    const math = dataService.DataAPIs().PrepareMath();
     math.SelectField('salary').Multiply(1.2); // Increment Salary by 20%
     const updatedRecord = await dataService.DataAPIs().ApplyMath('EMP1001', math);
     
@@ -322,7 +322,7 @@ Returns a Promise giving a message:`string` if the operation is success, else wi
 
 Type: `string` The ID of the record.
 
-#### CreateMath(): [MathAPI](#MathAPI)
+#### PrepareMath(): [MathAPI](#MathAPI)
 
 Returns a [MathAPI object](#MathAPI) to set math operations.
 

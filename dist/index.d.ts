@@ -87,7 +87,7 @@ export declare class DataMethods {
     UpdateRecord(id: string, data: any): Promise<DataStackDocument>;
     CreateRecord(data: any): Promise<DataStackDocument>;
     DeleteRecord(id: string): Promise<ErrorResponse>;
-    CreateMath(): MathAPI;
+    PrepareMath(): MathAPI;
     ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;
 }
 export declare class MathAPI {

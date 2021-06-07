@@ -826,7 +826,7 @@ export class DataMethods {
         }
     }
 
-    public CreateMath(): MathAPI {
+    public PrepareMath(): MathAPI {
         try {
             return new MathAPI();
         } catch (err) {

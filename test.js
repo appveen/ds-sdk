@@ -15,7 +15,7 @@ const PASSWORD = process.env.DATA_STACK_PASSWORD;
 
     let app = await dataStack.App('Jugnu');
     let dataService = await app.DataService('Employee');
-    const math = dataService.DataAPIs().CreateMath();
+    const math = dataService.DataAPIs().PrepareMath();
     math.SelectField('salary').Increment(5000).Multiply(1.2);
     console.log(math.CreatePayload());
     // const record = await dataService.DataAPIs().ApplyMath('USE1003', math);
