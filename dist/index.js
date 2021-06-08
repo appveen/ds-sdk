@@ -418,7 +418,7 @@ class DSDataService {
             return this;
         }
         catch (err) {
-            console.error('[ERROR] [IsDraft]', err);
+            console.error('[ERROR] [SwitchToDraft]', err);
             throw new types_1.ErrorResponse(err.response);
         }
     }
@@ -429,7 +429,7 @@ class DSDataService {
             return this;
         }
         catch (err) {
-            console.error('[ERROR] [IsDraft]', err);
+            console.error('[ERROR] [SwitchToOriginal]', err);
             throw new types_1.ErrorResponse(err.response);
         }
     }
@@ -1021,7 +1021,7 @@ class DataMethods {
                 return new types_1.DataStackDocument(resp.body);
             }
             catch (err) {
-                console.error('[ERROR] [UpdateRecord]', err);
+                console.error('[ERROR] [UpsertRecord]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -1057,7 +1057,7 @@ class DataMethods {
                 return new types_1.DataStackDocument(resp.body);
             }
             catch (err) {
-                console.error('[ERROR] [CreateRecord]', err);
+                console.error('[ERROR] [CascadeRecord]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
