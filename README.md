@@ -241,9 +241,23 @@ This will stop all the Data Service in the app, if not already stopped.
 
 The object contains utility methods to manage a Data Service.
 
+#### **HasDraft()**
+
+Returns an `boolean` value.
+
 #### **IsDraft()**
 
 Returns an `boolean` value.
+
+
+#### **SwitchToDraft()**
+
+Returns the same [DSDataService object](#DSDataService).
+
+
+#### **SwitchToOriginal()**
+
+Returns the same [DSDataService object](#DSDataService).
 
 #### **DiscardDraft()**
 
@@ -363,7 +377,29 @@ Type: `string` The ID of the record.
 
 Type: `object` The data the should to be updated.
 
+#### **UpsertRecord(id: string, data: object)**
+
+Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### **_id_**
+
+Type: `string` The ID of the record.
+
+##### **_data_**
+
+Type: `object` The data the should to be updated.
+
 #### **CreateRecord(data: object)**
+
+Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### **_data_**
+
+Type: `object` The data the should to be created.
+
+#### **CascadeRecord(data: object)**
+
+This method creates the related Data Service's document if provided in the data object.
 
 Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
 

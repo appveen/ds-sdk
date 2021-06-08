@@ -66,7 +66,7 @@ export declare class BasicDetails {
     constructor(data?: BasicDetails);
 }
 export declare class Credentials {
-    host?: string;
+    host?: string | undefined;
     /**
      * @description Username or Client ID
      */
@@ -78,7 +78,7 @@ export declare class Credentials {
     /**
      * @description Available Authentication Token
      */
-    token?: string;
+    token?: string | undefined;
     constructor(data?: Credentials);
 }
 export declare class ListOptions {

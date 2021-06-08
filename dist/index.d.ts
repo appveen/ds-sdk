@@ -23,12 +23,17 @@ export declare class DSApp {
 export declare class DSDataService {
     app: App;
     data: DataService;
+    private originalData;
+    private draftData;
     private api;
     private smApi;
     private _isDraft;
     constructor(app: App, data: DataService);
     private FetchDraft;
+    HasDraft(): boolean;
     IsDraft(): boolean;
+    SwitchToDraft(): DSDataService;
+    SwitchToOriginal(): DSDataService;
     DiscardDraft(): Promise<DSDataService>;
     Delete(): Promise<DSApp>;
     Start(): Promise<ErrorResponse>;
@@ -96,7 +101,9 @@ export declare class DataMethods {
     ListRecords(options: ListOptions): Promise<DataStackDocument[]>;
     GetRecord(id: string): Promise<DataStackDocument>;
     UpdateRecord(id: string, data: any): Promise<DataStackDocument>;
+    UpsertRecord(id: string, data: any): Promise<DataStackDocument>;
     CreateRecord(data: any): Promise<DataStackDocument>;
+    CascadeRecord(data: any): Promise<DataStackDocument>;
     DeleteRecord(id: string): Promise<ErrorResponse>;
     PrepareMath(): MathAPI;
     ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;

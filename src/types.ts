@@ -130,7 +130,7 @@ export class BasicDetails {
 
 
 export class Credentials {
-    host?: string;
+    host?: string | undefined;
     /**
      * @description Username or Client ID
      */
@@ -142,7 +142,7 @@ export class Credentials {
     /**
      * @description Available Authentication Token
      */
-    token?: string;
+    token?: string | undefined;
     constructor(data?: Credentials) {
         this.host = data?.host || process.env.DATA_STACK_HOST;
         this.username = data?.username || process.env.DATA_STACK_USERNAME;
@@ -243,7 +243,7 @@ export class DataService {
                 return true;
             }
             return false;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [Start]', err);
             throw new ErrorResponse(err.response);
         }

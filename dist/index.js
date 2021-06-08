@@ -297,7 +297,6 @@ class DSApp {
                 const filter = { app: this.app._id };
                 const searchParams = new URLSearchParams();
                 searchParams.append('filter', JSON.stringify(filter));
-                // searchParams.append('draft', 'true');
                 let resp = yield got_1.default.get(this.api, {
                     searchParams: searchParams,
                     headers: {
@@ -321,7 +320,6 @@ class DSApp {
                 const filter = { app: this.app._id, $or: [{ name }, { _id: name }] };
                 const searchParams = new URLSearchParams();
                 searchParams.append('filter', JSON.stringify(filter));
-                // searchParams.append('draft', 'true');
                 let resp = yield got_1.default.get(this.api, {
                     searchParams: searchParams,
                     headers: {
@@ -365,14 +363,12 @@ class DSDataService {
     constructor(app, data) {
         this.app = new types_1.App(app);
         this.data = new types_1.DataService(data);
+        this.originalData = new types_1.DataService(data);
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
         this.smApi = authData.creds.host + `/api/a/sm/service`;
+        this._isDraft = false;
         if (this.data.HasDraft()) {
             this.FetchDraft();
-            this._isDraft = true;
-        }
-        else {
-            this._isDraft = false;
         }
     }
     FetchDraft() {
@@ -387,7 +383,7 @@ class DSDataService {
                     },
                     responseType: 'json'
                 });
-                this.data = new types_1.DataService(resp.body);
+                this.draftData = new types_1.DataService(resp.body);
             }
             catch (err) {
                 console.error('[ERROR] [FetchDraft]', err);
@@ -395,9 +391,42 @@ class DSDataService {
             }
         });
     }
+    HasDraft() {
+        try {
+            return this.data.HasDraft();
+        }
+        catch (err) {
+            console.error('[ERROR] [HasDraft]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
     IsDraft() {
         try {
             return this._isDraft;
+        }
+        catch (err) {
+            console.error('[ERROR] [IsDraft]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    SwitchToDraft() {
+        try {
+            if (this.draftData) {
+                this._isDraft = true;
+                this.data = new types_1.DataService(this.draftData);
+            }
+            return this;
+        }
+        catch (err) {
+            console.error('[ERROR] [IsDraft]', err);
+            throw new types_1.ErrorResponse(err.response);
+        }
+    }
+    SwitchToOriginal() {
+        try {
+            this._isDraft = false;
+            this.data = new types_1.DataService(this.originalData);
+            return this;
         }
         catch (err) {
             console.error('[ERROR] [IsDraft]', err);
@@ -419,7 +448,8 @@ class DSDataService {
                     },
                     responseType: 'json'
                 }));
-                this.data = new types_1.DataService(resp.body);
+                this.data = new types_1.DataService(this.originalData);
+                this.draftData = undefined;
                 return this;
             }
             catch (err) {
@@ -899,7 +929,7 @@ class DataMethods {
                 return resp.body;
             }
             catch (err) {
-                console.error('[ERROR] [Count]', err);
+                console.error('[ERROR] [CountRecords]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -938,7 +968,7 @@ class DataMethods {
                 });
             }
             catch (err) {
-                console.error('[ERROR] [List]', err);
+                console.error('[ERROR] [ListRecords]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -955,7 +985,7 @@ class DataMethods {
                 return new types_1.DataStackDocument(resp.body);
             }
             catch (err) {
-                console.error('[ERROR] [Get]', err);
+                console.error('[ERROR] [GetRecord]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -973,7 +1003,25 @@ class DataMethods {
                 return new types_1.DataStackDocument(resp.body);
             }
             catch (err) {
-                console.error('[ERROR] [Put]', err);
+                console.error('[ERROR] [UpdateRecord]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    UpsertRecord(id, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.put(this.api + '/' + id + '?upsert=true', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: data
+                });
+                return new types_1.DataStackDocument(resp.body);
+            }
+            catch (err) {
+                console.error('[ERROR] [UpdateRecord]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -991,7 +1039,25 @@ class DataMethods {
                 return new types_1.DataStackDocument(resp.body);
             }
             catch (err) {
-                console.error('[ERROR] [Post]', err);
+                console.error('[ERROR] [CreateRecord]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    CascadeRecord(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.post(this.api + '?cascade=true', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: data
+                });
+                return new types_1.DataStackDocument(resp.body);
+            }
+            catch (err) {
+                console.error('[ERROR] [CreateRecord]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -1008,7 +1074,7 @@ class DataMethods {
                 return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
             }
             catch (err) {
-                console.error('[ERROR] [Delete]', err);
+                console.error('[ERROR] [DeleteRecord]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -1018,7 +1084,7 @@ class DataMethods {
             return new MathAPI();
         }
         catch (err) {
-            console.error('[ERROR] [Delete]', err);
+            console.error('[ERROR] [PrepareMath]', err);
             throw new types_1.ErrorResponse(err.response);
         }
     }
@@ -1035,7 +1101,7 @@ class DataMethods {
                 return new types_1.DataStackDocument(resp.body);
             }
             catch (err) {
-                console.error('[ERROR] [Delete]', err);
+                console.error('[ERROR] [ApplyMath]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });

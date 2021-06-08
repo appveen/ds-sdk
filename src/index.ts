@@ -57,7 +57,7 @@ class AuthHandler {
                 this.createTokenRefreshRoutine();
             }
             return new DataStack();
-        } catch (err) {
+        } catch (err: any) {
             throw new ErrorResponse(err.response);
         }
     }
@@ -74,7 +74,7 @@ class AuthHandler {
                 this.createTokenRefreshRoutine();
             }
             return new DataStack();
-        } catch (err) {
+        } catch (err: any) {
             throw new ErrorResponse(err.response);
         }
     }
@@ -95,7 +95,7 @@ class AuthHandler {
                 }) as any;
                 const data = resp.body;
                 this.patchData(data);
-            } catch (err) {
+            } catch (err: any) {
                 if (err.response.statusCode === 401) {
                     if (this.creds?.username && this.creds?.password) {
                         this.login();
@@ -128,7 +128,7 @@ class AuthHandler {
                 }) as any;
                 const data = resp.body;
                 this.patchData(data);
-            } catch (err) {
+            } catch (err: any) {
                 if (err.response.statusCode === 401) {
                     if (this.creds?.username && this.creds?.password) {
                         this.login();
@@ -182,7 +182,7 @@ export class DataStack {
             return resp.body.map((item: any) => {
                 return new DSApp(item);
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [ListApps]', err);
             throw new ErrorResponse(err.response);
         }
@@ -197,7 +197,7 @@ export class DataStack {
                 responseType: 'json'
             }) as any;
             return new DSApp(resp.body);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [App]', err);
             throw new ErrorResponse(err.response);
         }
@@ -216,7 +216,7 @@ export class DataStack {
                 }
             }) as any;
             return new DSApp(resp.body);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [App]', err);
             throw new ErrorResponse(err.response);
         }
@@ -231,7 +231,7 @@ export class DataStack {
                 responseType: 'json'
             }) as any;
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [App]', err);
             throw new ErrorResponse(err.response);
         }
@@ -260,7 +260,7 @@ export class DSApp {
                 responseType: 'json'
             }) as any;
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [DataService]', err);
             throw new ErrorResponse(err.response);
         }
@@ -275,7 +275,7 @@ export class DSApp {
                 responseType: 'json'
             }) as any;
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [DataService]', err);
             throw new ErrorResponse(err.response);
         }
@@ -286,7 +286,6 @@ export class DSApp {
             const filter = { app: this.app._id };
             const searchParams = new URLSearchParams();
             searchParams.append('filter', JSON.stringify(filter));
-            // searchParams.append('draft', 'true');
             let resp = await got.get(this.api, {
                 searchParams: searchParams,
                 headers: {
@@ -297,7 +296,7 @@ export class DSApp {
             return resp.body.map((item: any) => {
                 new DSDataService(this.app, item);
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [ListDataServices]', err);
             throw new ErrorResponse(err.response);
         }
@@ -308,7 +307,6 @@ export class DSApp {
             const filter = { app: this.app._id, $or: [{ name }, { _id: name }] };
             const searchParams = new URLSearchParams();
             searchParams.append('filter', JSON.stringify(filter));
-            // searchParams.append('draft', 'true');
             let resp = await got.get(this.api, {
                 searchParams: searchParams,
                 headers: {
@@ -321,7 +319,7 @@ export class DSApp {
             } else {
                 return new DSDataService(this.app, resp.body);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [DataService]', err);
             throw new ErrorResponse(err.response);
         }
@@ -336,7 +334,7 @@ export class DSApp {
                 responseType: 'json'
             }) as any;
             return new DSDataService(this.app, resp.body);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [DataService]', err);
             throw new ErrorResponse(err.response);
         }
@@ -347,20 +345,20 @@ export class DSApp {
 export class DSDataService {
     app: App;
     data: DataService;
+    private originalData: DataService | undefined;
+    private draftData: DataService | undefined;
     private api: string;
     private smApi: string;
     private _isDraft: boolean;
     constructor(app: App, data: DataService) {
         this.app = new App(app);
         this.data = new DataService(data);
+        this.originalData = new DataService(data);
         this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
         this.smApi = authData.creds.host + `/api/a/sm/service`;
-
+        this._isDraft = false;
         if (this.data.HasDraft()) {
             this.FetchDraft();
-            this._isDraft = true;
-        } else {
-            this._isDraft = false;
         }
     }
 
@@ -375,9 +373,18 @@ export class DSDataService {
                 },
                 responseType: 'json'
             }) as any;
-            this.data = new DataService(resp.body);
-        } catch (err) {
+            this.draftData = new DataService(resp.body);
+        } catch (err: any) {
             console.error('[ERROR] [FetchDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public HasDraft(): boolean {
+        try {
+            return this.data.HasDraft();
+        } catch (err: any) {
+            console.error('[ERROR] [HasDraft]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -385,7 +392,31 @@ export class DSDataService {
     public IsDraft(): boolean {
         try {
             return this._isDraft;
-        } catch (err) {
+        } catch (err: any) {
+            console.error('[ERROR] [IsDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public SwitchToDraft(): DSDataService {
+        try {
+            if (this.draftData) {
+                this._isDraft = true;
+                this.data = new DataService(this.draftData);
+            }
+            return this;
+        } catch (err: any) {
+            console.error('[ERROR] [IsDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public SwitchToOriginal(): DSDataService {
+        try {
+            this._isDraft = false;
+            this.data = new DataService(this.originalData);
+            return this;
+        } catch (err: any) {
             console.error('[ERROR] [IsDraft]', err);
             throw new ErrorResponse(err.response);
         }
@@ -405,9 +436,10 @@ export class DSDataService {
                 },
                 responseType: 'json'
             }) as any;
-            this.data = new DataService(resp.body);
+            this.data = new DataService(this.originalData);
+            this.draftData = undefined;
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [DiscardDraft]', err);
             throw new ErrorResponse(err.response);
         }
@@ -422,7 +454,7 @@ export class DSDataService {
                 responseType: 'json'
             }) as any;
             return new DSApp(this.app);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [Delete]', err);
             throw new ErrorResponse(err.response);
         }
@@ -437,7 +469,7 @@ export class DSDataService {
                 responseType: 'json'
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [Start]', err);
             throw new ErrorResponse(err.response);
         }
@@ -452,7 +484,7 @@ export class DSDataService {
                 responseType: 'json'
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [Stop]', err);
             throw new ErrorResponse(err.response);
         }
@@ -467,7 +499,7 @@ export class DSDataService {
                 responseType: 'json'
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [ScaleUp]', err);
             throw new ErrorResponse(err.response);
         }
@@ -482,7 +514,7 @@ export class DSDataService {
                 responseType: 'json'
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [ScaleDown]', err);
             throw new ErrorResponse(err.response);
         }
@@ -497,7 +529,7 @@ export class DSDataService {
                 responseType: 'json'
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [Repair]', err);
             throw new ErrorResponse(err.response);
         }
@@ -506,7 +538,7 @@ export class DSDataService {
     public getIntegrations(): DSDataServiceIntegration {
         try {
             return new DSDataServiceIntegration(this.app, this.data);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getIntegrations]', err);
             throw new ErrorResponse(err.response);
         }
@@ -524,7 +556,7 @@ export class DSDataService {
             }) as any;
             assignIn(this.data, resp.body);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [setIntegrations]', err);
             throw new ErrorResponse(err.response);
         }
@@ -533,7 +565,7 @@ export class DSDataService {
     public getRoles(): DSDataServiceRole {
         try {
             return new DSDataServiceRole(this.app, this.data);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getRoles]', err);
             throw new ErrorResponse(err.response);
         }
@@ -551,7 +583,7 @@ export class DSDataService {
             }) as any;
             assignIn(this.data, resp.body);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [setRoles]', err);
             throw new ErrorResponse(err.response);
         }
@@ -560,7 +592,7 @@ export class DSDataService {
     public getSchema(): DSDataServiceSchema {
         try {
             return new DSDataServiceSchema(this.app, this.data);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getSchema]', err);
             throw new ErrorResponse(err.response);
         }
@@ -578,7 +610,7 @@ export class DSDataService {
             }) as any;
             assignIn(this.data, resp.body);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [setSchema]', err);
             throw new ErrorResponse(err.response);
         }
@@ -629,7 +661,7 @@ export class DSDataServiceRole {
     public listRoles(): RoleBlock[] {
         try {
             return this.data.role.roles;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [listRoles]', err);
             throw new ErrorResponse(err.response);
         }
@@ -638,7 +670,7 @@ export class DSDataServiceRole {
     public getRole(name: string): RoleBlock | undefined {
         try {
             return this.data.role.roles.find(e => e.name === name);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getRole]', err);
             throw new ErrorResponse(err.response);
         }
@@ -650,7 +682,7 @@ export class DSDataServiceRole {
             temp.setName(name);
             temp.setDescription(description);
             return temp;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getRole]', err);
             throw new ErrorResponse(err.response);
         }
@@ -663,7 +695,7 @@ export class DSDataServiceRole {
             }
             this.data.role.roles.push(data);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [addRole]', err);
             throw new ErrorResponse(err.response);
         }
@@ -674,7 +706,7 @@ export class DSDataServiceRole {
             const index = this.data.role.roles.findIndex(e => e.name === name);
             this.data.role.roles.splice(index, 1);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [removeRole]', err);
             throw new ErrorResponse(err.response);
         }
@@ -699,7 +731,7 @@ export class DSDataServiceIntegration {
     public listPreHook(): WebHook[] {
         try {
             return this.data.preHooks;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [listPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -708,7 +740,7 @@ export class DSDataServiceIntegration {
     public getPreHook(name: string): WebHook | undefined {
         try {
             return this.data.preHooks.find(e => e.name === name);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -718,7 +750,7 @@ export class DSDataServiceIntegration {
         try {
             this.data.preHooks.push(data);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [addPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -729,7 +761,7 @@ export class DSDataServiceIntegration {
             const index = this.data.preHooks.findIndex(e => e.name === name);
             this.data.preHooks.splice(index, 1);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [removePreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -738,7 +770,7 @@ export class DSDataServiceIntegration {
     public listPostHook(): WebHook[] {
         try {
             return this.data.webHooks;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [listPostHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -747,7 +779,7 @@ export class DSDataServiceIntegration {
     public getPostHook(name: string): WebHook | undefined {
         try {
             return this.data.webHooks.find(e => e.name === name);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getPostHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -757,7 +789,7 @@ export class DSDataServiceIntegration {
         try {
             this.data.webHooks.push(data);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [addPostHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -768,7 +800,7 @@ export class DSDataServiceIntegration {
             const index = this.data.webHooks.findIndex(e => e.name === name);
             this.data.webHooks.splice(index, 1);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [removePostHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -792,7 +824,7 @@ export class DSDataServiceSchema {
     public getJSONSchema() {
         try {
             return this.data.preHooks;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [listPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -801,7 +833,7 @@ export class DSDataServiceSchema {
     public setJSONSchema(schema: any) {
         try {
             return this.data.preHooks;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [listPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -810,7 +842,7 @@ export class DSDataServiceSchema {
     public newField(data?: SchemaField): SchemaField {
         try {
             return new SchemaField(data);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -819,7 +851,7 @@ export class DSDataServiceSchema {
     public getField(name: string): SchemaField | undefined {
         try {
             return this.data.definition.find(e => e.getName() === name);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [getPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -829,7 +861,7 @@ export class DSDataServiceSchema {
         try {
             this.data.definition.push(data);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [addPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -839,7 +871,7 @@ export class DSDataServiceSchema {
         try {
             this.data.definition.push(data);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [addPreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -850,7 +882,7 @@ export class DSDataServiceSchema {
             const index = this.data.preHooks.findIndex(e => e.name === name);
             this.data.preHooks.splice(index, 1);
             return this;
-        } catch (err) {
+        } catch (err: any) {
             console.error('[ERROR] [removePreHook]', err);
             throw new ErrorResponse(err.response);
         }
@@ -879,8 +911,8 @@ export class DataMethods {
                 searchParams
             }) as any;
             return resp.body;
-        } catch (err) {
-            console.error('[ERROR] [Count]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [CountRecords]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -916,8 +948,8 @@ export class DataMethods {
             return resp.body.map((item: any) => {
                 return new DataStackDocument(item);
             });
-        } catch (err) {
-            console.error('[ERROR] [List]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [ListRecords]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -931,8 +963,8 @@ export class DataMethods {
                 responseType: 'json'
             }) as any;
             return new DataStackDocument(resp.body);
-        } catch (err) {
-            console.error('[ERROR] [Get]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [GetRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -947,8 +979,24 @@ export class DataMethods {
                 json: data
             }) as any;
             return new DataStackDocument(resp.body);
-        } catch (err) {
-            console.error('[ERROR] [Put]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [UpdateRecord]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async UpsertRecord(id: string, data: any): Promise<DataStackDocument> {
+        try {
+            let resp = await got.put(this.api + '/' + id + '?upsert=true', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: data
+            }) as any;
+            return new DataStackDocument(resp.body);
+        } catch (err: any) {
+            console.error('[ERROR] [UpdateRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -963,8 +1011,24 @@ export class DataMethods {
                 json: data
             }) as any;
             return new DataStackDocument(resp.body);
-        } catch (err) {
-            console.error('[ERROR] [Post]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [CreateRecord]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async CascadeRecord(data: any): Promise<DataStackDocument> {
+        try {
+            let resp = await got.post(this.api + '?cascade=true', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: data
+            }) as any;
+            return new DataStackDocument(resp.body);
+        } catch (err: any) {
+            console.error('[ERROR] [CreateRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -978,8 +1042,8 @@ export class DataMethods {
                 responseType: 'json'
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
-        } catch (err) {
-            console.error('[ERROR] [Delete]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [DeleteRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -987,8 +1051,8 @@ export class DataMethods {
     public PrepareMath(): MathAPI {
         try {
             return new MathAPI();
-        } catch (err) {
-            console.error('[ERROR] [Delete]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [PrepareMath]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1003,8 +1067,8 @@ export class DataMethods {
                 json: math.CreatePayload()
             }) as any;
             return new DataStackDocument(resp.body);
-        } catch (err) {
-            console.error('[ERROR] [Delete]', err);
+        } catch (err: any) {
+            console.error('[ERROR] [ApplyMath]', err);
             throw new ErrorResponse(err.response);
         }
     }
