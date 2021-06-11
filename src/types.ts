@@ -361,8 +361,8 @@ export class DataStackDocument {
     [key: string]: any;
     constructor(data: any) {
         Object.assign(this, data);
-        this._id = data._id;
-        this._metadata = new Metadata(data._metadata);
+        this._id = data?._id;
+        this._metadata = new Metadata(data?._metadata);
     }
 }
 
@@ -376,11 +376,11 @@ export class Metadata {
         release: string;
     } | undefined;
     constructor(data: Metadata) {
-        this.deleted = data.deleted || false;
-        this.lastUpdated = data.lastUpdated ? new Date(data.lastUpdated) : undefined;
-        this.lastUpdatedBy = data.lastUpdatedBy || '';
-        this.createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
-        this.version = data.version;
+        this.deleted = data?.deleted || false;
+        this.lastUpdated = data?.lastUpdated ? new Date(data?.lastUpdated) : undefined;
+        this.lastUpdatedBy = data?.lastUpdatedBy || '';
+        this.createdAt = data?.createdAt ? new Date(data?.createdAt) : undefined;
+        this.version = data?.version;
     }
 }
 
