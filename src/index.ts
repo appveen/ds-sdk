@@ -445,6 +445,51 @@ export class DSDataService {
         }
     }
 
+    public async PurgeAllData(): Promise<DSDataService> {
+        try {
+            let resp = await got.delete(this.api + '/purge/all', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return this;
+        } catch (err: any) {
+            console.error('[ERROR] [DiscardDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async PurgeApiLogs(): Promise<DSDataService> {
+        try {
+            let resp = await got.delete(this.api + '/purge/log', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return this;
+        } catch (err: any) {
+            console.error('[ERROR] [DiscardDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async PurgeAuditLogs(): Promise<DSDataService> {
+        try {
+            let resp = await got.delete(this.api + '/purge/audit', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return this;
+        } catch (err: any) {
+            console.error('[ERROR] [DiscardDraft]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
     public async Delete(): Promise<DSApp> {
         try {
             let resp = await got.delete(this.smApi + '/' + this.data._id, {

@@ -239,18 +239,18 @@ exports.ErrorResponse = ErrorResponse;
 class DataStackDocument {
     constructor(data) {
         Object.assign(this, data);
-        this._id = data._id;
-        this._metadata = new Metadata(data._metadata);
+        this._id = data === null || data === void 0 ? void 0 : data._id;
+        this._metadata = new Metadata(data === null || data === void 0 ? void 0 : data._metadata);
     }
 }
 exports.DataStackDocument = DataStackDocument;
 class Metadata {
     constructor(data) {
-        this.deleted = data.deleted || false;
-        this.lastUpdated = data.lastUpdated ? new Date(data.lastUpdated) : undefined;
-        this.lastUpdatedBy = data.lastUpdatedBy || '';
-        this.createdAt = data.createdAt ? new Date(data.createdAt) : undefined;
-        this.version = data.version;
+        this.deleted = (data === null || data === void 0 ? void 0 : data.deleted) || false;
+        this.lastUpdated = (data === null || data === void 0 ? void 0 : data.lastUpdated) ? new Date(data === null || data === void 0 ? void 0 : data.lastUpdated) : undefined;
+        this.lastUpdatedBy = (data === null || data === void 0 ? void 0 : data.lastUpdatedBy) || '';
+        this.createdAt = (data === null || data === void 0 ? void 0 : data.createdAt) ? new Date(data === null || data === void 0 ? void 0 : data.createdAt) : undefined;
+        this.version = data === null || data === void 0 ? void 0 : data.version;
     }
 }
 exports.Metadata = Metadata;

@@ -458,6 +458,57 @@ class DSDataService {
             }
         });
     }
+    PurgeAllData() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.delete(this.api + '/purge/all', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [DiscardDraft]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    PurgeApiLogs() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.delete(this.api + '/purge/log', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [DiscardDraft]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    PurgeAuditLogs() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.delete(this.api + '/purge/audit', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return this;
+            }
+            catch (err) {
+                console.error('[ERROR] [DiscardDraft]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
     Delete() {
         return __awaiter(this, void 0, void 0, function* () {
             try {

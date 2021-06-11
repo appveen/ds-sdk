@@ -265,6 +265,24 @@ Returns a Promise giving the same [DSDataService object](#DSDataService) if the 
 
 This will discard the draft version of this Data Service.
 
+#### **purgeAllData()**
+
+Returns a Promise giving the same [DSDataService object](#DSDataService) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+This will Delete all data, API logs and audit logs of this Data Service.
+
+#### **PurgeApiLogs()**
+
+Returns a Promise giving the same [DSDataService object](#DSDataService) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+This will Delete all API logs of this Data Service.
+
+#### **PurgeAuditLogs()**
+
+Returns a Promise giving the same [DSDataService object](#DSDataService) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+This will Delete all audit logs of this Data Service.
+
 #### **Delete()**
 
 Returns an [DSApp object](#DSApp).

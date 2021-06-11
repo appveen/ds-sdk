@@ -35,6 +35,9 @@ export declare class DSDataService {
     SwitchToDraft(): DSDataService;
     SwitchToOriginal(): DSDataService;
     DiscardDraft(): Promise<DSDataService>;
+    PurgeAllData(): Promise<DSDataService>;
+    PurgeApiLogs(): Promise<DSDataService>;
+    PurgeAuditLogs(): Promise<DSDataService>;
     Delete(): Promise<DSApp>;
     Start(): Promise<ErrorResponse>;
     Stop(): Promise<ErrorResponse>;
