@@ -1,0 +1,9 @@
+node_modules
+logs
+.DS_Store
+.env
+.vscode
+src
+.github
+test.js
+.npmignore
