@@ -87,8 +87,6 @@ export declare class DSDataServiceSchema {
     private api;
     constructor(app: App, data: DataService);
     getData(): DataService;
-    getJSONSchema(): WebHook[];
-    setJSONSchema(schema: any): WebHook[];
     newField(data?: SchemaField): SchemaField;
     getField(name: string): SchemaField | undefined;
     addField(data: SchemaField): this;
