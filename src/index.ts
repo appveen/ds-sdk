@@ -1,9 +1,12 @@
 import got from 'got';
 import { assignIn } from 'lodash';
 import { interval } from 'rxjs';
+import { getLogger } from 'log4js';
 import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SchemaFieldTypes } from './types';
 
 var authData: AuthHandler;
+var logger = getLogger('@appveen/ds-sdk');
+logger.level = process.env.LOG_LEVEL || 'info';
 
 export function authenticateByCredentials(creds: Credentials): Promise<DataStack> {
     authData = new AuthHandler(creds);
@@ -13,6 +16,19 @@ export function authenticateByCredentials(creds: Credentials): Promise<DataStack
 export function authenticateByToken(creds: Credentials): Promise<DataStack> {
     authData = new AuthHandler(creds);
     return authData.authenticateByToken();
+}
+
+
+function logError(message: string, err: any) {
+    if (err) {
+        if (err.response) {
+            logger.error(message, err.statusCode, err.body);
+        } else {
+            logger.error(message, err);
+        }
+    } else {
+        logger.error(message)
+    }
 }
 
 class AuthHandler {
@@ -46,14 +62,19 @@ class AuthHandler {
 
     async login(): Promise<DataStack> {
         try {
+            logger.info('Authenticating at:', this.creds.host);
+            logger.info('Using Username:', this.creds.username);
             const payload = { username: this.creds.username, password: this.creds.password };
             const resp = await got.post(this.api + '/login', { json: payload, responseType: 'json' });
             const data = resp.body;
             this.patchData(data);
+            logger.info('Authentication Successfull');
             if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
+                logger.info('Creating HB Routine');
                 this.createHBRoutine();
             }
             if (this.rbacUserTokenRefresh) {
+                logger.info('Creating Auto Refresh Routine');
                 this.createTokenRefreshRoutine();
             }
             return new DataStack();
@@ -82,7 +103,8 @@ class AuthHandler {
     private async createHBRoutine() {
         const intervalValue = (this.rbacHbInterval * 1000) - 1000;
         this.hbRoutine = interval(intervalValue).subscribe(async () => {
-            console.log('[HB Triggred]', this.token, this.uuid);
+            logger.info('[HB Triggred]');
+            logger.debug(this.token, this.uuid);
             try {
                 let resp = await got.put(this.api + '/usr/hb', {
                     headers: {
@@ -103,10 +125,8 @@ class AuthHandler {
                     if (this.hbRoutine) {
                         this.hbRoutine.unsubscribe();
                     }
-                } else {
-                    console.log(err.body);
                 }
-                console.error('[ERROR] [createHBRoutine]', err);
+                logError('[ERROR] [createHBRoutine]', err);
             }
         });
     }
@@ -117,7 +137,8 @@ class AuthHandler {
             intervalValue = (this.rbacBotTokenDuration - (5 * 60)) * 1000;
         }
         this.refreshRoutine = interval(intervalValue).subscribe(async () => {
-            console.log('[Refresh Triggred]', this.token, this.rToken);
+            logger.info('[Refresh Triggred]');
+            logger.debug(this.token, this.rToken);
             try {
                 let resp = await got.get(this.api + '/refresh', {
                     headers: {
@@ -136,10 +157,8 @@ class AuthHandler {
                     if (this.refreshRoutine) {
                         this.refreshRoutine.unsubscribe();
                     }
-                } else {
-                    console.log(err.response.body);
                 }
-                console.error('[ERROR] [createTokenRefreshRoutine]', err);
+                logError('[ERROR] [createTokenRefreshRoutine]', err);
             }
         });
     }
@@ -183,7 +202,7 @@ export class DataStack {
                 return new DSApp(item);
             });
         } catch (err: any) {
-            console.error('[ERROR] [ListApps]', err.response);
+            logError('[ERROR] [ListApps]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -198,7 +217,7 @@ export class DataStack {
             }) as any;
             return new DSApp(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [App]', err.response);
+            logError('[ERROR] [App]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -217,7 +236,7 @@ export class DataStack {
             }) as any;
             return new DSApp(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [CreateApp]', err.response);
+            logError('[ERROR] [CreateApp]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -233,7 +252,7 @@ export class DataStack {
             }) as any;
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [DeleteApp]', err.response);
+            logError('[ERROR] [DeleteApp]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -263,7 +282,7 @@ export class DSApp {
             }) as any;
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [StartAllDataServices]', err.response);
+            logError('[ERROR] [StartAllDataServices]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -279,7 +298,7 @@ export class DSApp {
             }) as any;
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [StopAllDataServices]', err.response);
+            logError('[ERROR] [StopAllDataServices]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -300,7 +319,7 @@ export class DSApp {
                 new DSDataService(this.app, item);
             });
         } catch (err: any) {
-            console.error('[ERROR] [ListDataServices]', err.response);
+            logError('[ERROR] [ListDataServices]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -323,7 +342,7 @@ export class DSApp {
                 return new DSDataService(this.app, resp.body);
             }
         } catch (err: any) {
-            console.error('[ERROR] [DataService]', err.response);
+            logError('[ERROR] [DataService]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -342,7 +361,7 @@ export class DSApp {
             }) as any;
             return new DSDataService(this.app, resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [CreateDataService]', err.response);
+            logError('[ERROR] [CreateDataService]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -382,7 +401,7 @@ export class DSDataService {
             }) as any;
             this.draftData = new DataService(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [FetchDraft]', err.response);
+            logError('[ERROR] [FetchDraft]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -391,7 +410,7 @@ export class DSDataService {
         try {
             return this.data.HasDraft();
         } catch (err: any) {
-            console.error('[ERROR] [HasDraft]', err);
+            logError('[ERROR] [HasDraft]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -400,7 +419,7 @@ export class DSDataService {
         try {
             return this._isDraft;
         } catch (err: any) {
-            console.error('[ERROR] [IsDraft]', err);
+            logError('[ERROR] [IsDraft]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -413,7 +432,7 @@ export class DSDataService {
             }
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [SwitchToDraft]', err);
+            logError('[ERROR] [SwitchToDraft]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -424,7 +443,7 @@ export class DSDataService {
             this.data = new DataService(this.originalData);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [SwitchToOriginal]', err);
+            logError('[ERROR] [SwitchToOriginal]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -448,7 +467,7 @@ export class DSDataService {
             this.draftData = undefined;
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [DiscardDraft]', err.response);
+            logError('[ERROR] [DiscardDraft]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -464,7 +483,7 @@ export class DSDataService {
             }) as any;
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [PurgeAllData]', err.response);
+            logError('[ERROR] [PurgeAllData]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -480,7 +499,7 @@ export class DSDataService {
             }) as any;
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [PurgeApiLogs]', err.response);
+            logError('[ERROR] [PurgeApiLogs]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -496,7 +515,7 @@ export class DSDataService {
             }) as any;
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [PurgeAuditLogs]', err.response);
+            logError('[ERROR] [PurgeAuditLogs]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -512,7 +531,7 @@ export class DSDataService {
             }) as any;
             return new DSApp(this.app);
         } catch (err: any) {
-            console.error('[ERROR] [Delete]', err.response);
+            logError('[ERROR] [Delete]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -528,7 +547,7 @@ export class DSDataService {
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
         } catch (err: any) {
-            console.error('[ERROR] [Start]', err.response);
+            logError('[ERROR] [Start]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -544,7 +563,7 @@ export class DSDataService {
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
         } catch (err: any) {
-            console.error('[ERROR] [Stop]', err.response);
+            logError('[ERROR] [Stop]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -560,7 +579,7 @@ export class DSDataService {
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
         } catch (err: any) {
-            console.error('[ERROR] [ScaleUp]', err.response);
+            logError('[ERROR] [ScaleUp]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -576,7 +595,7 @@ export class DSDataService {
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
         } catch (err: any) {
-            console.error('[ERROR] [ScaleDown]', err.response);
+            logError('[ERROR] [ScaleDown]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -592,7 +611,7 @@ export class DSDataService {
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
         } catch (err: any) {
-            console.error('[ERROR] [Repair]', err.response);
+            logError('[ERROR] [Repair]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -601,7 +620,7 @@ export class DSDataService {
         try {
             return new DSDataServiceIntegration(this.app, this.data);
         } catch (err: any) {
-            console.error('[ERROR] [getIntegrations]', err);
+            logError('[ERROR] [getIntegrations]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -619,7 +638,7 @@ export class DSDataService {
             assignIn(this.data, resp.body);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [setIntegrations]', err.response);
+            logError('[ERROR] [setIntegrations]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -628,7 +647,7 @@ export class DSDataService {
         try {
             return new DSDataServiceRole(this.app, this.data);
         } catch (err: any) {
-            console.error('[ERROR] [getRoles]', err);
+            logError('[ERROR] [getRoles]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -646,7 +665,7 @@ export class DSDataService {
             assignIn(this.data, resp.body);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [setRoles]', err.response);
+            logError('[ERROR] [setRoles]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -655,7 +674,7 @@ export class DSDataService {
         try {
             return new DSDataServiceSchema(this.app, this.data);
         } catch (err: any) {
-            console.error('[ERROR] [getSchema]', err);
+            logError('[ERROR] [getSchema]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -673,7 +692,7 @@ export class DSDataService {
             assignIn(this.data, resp.body);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [setSchema]', err.response);
+            logError('[ERROR] [setSchema]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -724,7 +743,7 @@ export class DSDataServiceRole {
         try {
             return this.data.role.roles;
         } catch (err: any) {
-            console.error('[ERROR] [listRoles]', err);
+            logError('[ERROR] [listRoles]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -733,7 +752,7 @@ export class DSDataServiceRole {
         try {
             return this.data.role.roles.find(e => e.name === name);
         } catch (err: any) {
-            console.error('[ERROR] [getRole]', err);
+            logError('[ERROR] [getRole]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -745,7 +764,7 @@ export class DSDataServiceRole {
             temp.setDescription(description);
             return temp;
         } catch (err: any) {
-            console.error('[ERROR] [createNewRole]', err);
+            logError('[ERROR] [createNewRole]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -758,7 +777,7 @@ export class DSDataServiceRole {
             this.data.role.roles.push(data);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [addRole]', err);
+            logError('[ERROR] [addRole]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -769,7 +788,7 @@ export class DSDataServiceRole {
             this.data.role.roles.splice(index, 1);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [removeRole]', err);
+            logError('[ERROR] [removeRole]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -794,7 +813,7 @@ export class DSDataServiceIntegration {
         try {
             return this.data.preHooks;
         } catch (err: any) {
-            console.error('[ERROR] [listPreHook]', err);
+            logError('[ERROR] [listPreHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -803,7 +822,7 @@ export class DSDataServiceIntegration {
         try {
             return this.data.preHooks.find(e => e.name === name);
         } catch (err: any) {
-            console.error('[ERROR] [getPreHook]', err);
+            logError('[ERROR] [getPreHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -813,7 +832,7 @@ export class DSDataServiceIntegration {
             this.data.preHooks.push(data);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [addPreHook]', err);
+            logError('[ERROR] [addPreHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -824,7 +843,7 @@ export class DSDataServiceIntegration {
             this.data.preHooks.splice(index, 1);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [removePreHook]', err);
+            logError('[ERROR] [removePreHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -833,7 +852,7 @@ export class DSDataServiceIntegration {
         try {
             return this.data.webHooks;
         } catch (err: any) {
-            console.error('[ERROR] [listPostHook]', err);
+            logError('[ERROR] [listPostHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -842,7 +861,7 @@ export class DSDataServiceIntegration {
         try {
             return this.data.webHooks.find(e => e.name === name);
         } catch (err: any) {
-            console.error('[ERROR] [getPostHook]', err);
+            logError('[ERROR] [getPostHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -852,7 +871,7 @@ export class DSDataServiceIntegration {
             this.data.webHooks.push(data);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [addPostHook]', err);
+            logError('[ERROR] [addPostHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -863,7 +882,7 @@ export class DSDataServiceIntegration {
             this.data.webHooks.splice(index, 1);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [removePostHook]', err);
+            logError('[ERROR] [removePostHook]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -887,7 +906,7 @@ export class DSDataServiceSchema {
     //     try {
     //         return this.data.preHooks;
     //     } catch (err: any) {
-    //         console.error('[ERROR] [getJSONSchema]', err);
+    //         logError('[ERROR] [getJSONSchema]', err);
     //         throw new ErrorResponse(err);
     //     }
     // }
@@ -896,7 +915,7 @@ export class DSDataServiceSchema {
     //     try {
     //         return this.data.preHooks;
     //     } catch (err: any) {
-    //         console.error('[ERROR] [setJSONSchema]', err);
+    //         logError('[ERROR] [setJSONSchema]', err);
     //         throw new ErrorResponse(err);
     //     }
     // }
@@ -905,7 +924,7 @@ export class DSDataServiceSchema {
         try {
             return new SchemaField(data);
         } catch (err: any) {
-            console.error('[ERROR] [newField]', err);
+            logError('[ERROR] [newField]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -914,7 +933,7 @@ export class DSDataServiceSchema {
         try {
             return this.data.definition.find(e => e.getName() === name);
         } catch (err: any) {
-            console.error('[ERROR] [getField]', err);
+            logError('[ERROR] [getField]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -924,7 +943,7 @@ export class DSDataServiceSchema {
             this.data.definition.push(data);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [addField]', err);
+            logError('[ERROR] [addField]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -934,7 +953,7 @@ export class DSDataServiceSchema {
             this.data.definition.push(data);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [patchField]', err);
+            logError('[ERROR] [patchField]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -945,7 +964,7 @@ export class DSDataServiceSchema {
             this.data.preHooks.splice(index, 1);
             return this;
         } catch (err: any) {
-            console.error('[ERROR] [removeField]', err);
+            logError('[ERROR] [removeField]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -974,7 +993,7 @@ export class DataMethods {
             }) as any;
             return resp.body;
         } catch (err: any) {
-            console.error('[ERROR] [CountRecords]', err.response);
+            logError('[ERROR] [CountRecords]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1011,7 +1030,7 @@ export class DataMethods {
                 return new DataStackDocument(item);
             });
         } catch (err: any) {
-            console.error('[ERROR] [ListRecords]', err.response);
+            logError('[ERROR] [ListRecords]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1026,7 +1045,7 @@ export class DataMethods {
             }) as any;
             return new DataStackDocument(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [GetRecord]', err.response);
+            logError('[ERROR] [GetRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1042,7 +1061,7 @@ export class DataMethods {
             }) as any;
             return new DataStackDocument(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [UpdateRecord]', err.response);
+            logError('[ERROR] [UpdateRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1058,7 +1077,7 @@ export class DataMethods {
             }) as any;
             return new DataStackDocument(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [UpsertRecord]', err.response);
+            logError('[ERROR] [UpsertRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1074,7 +1093,7 @@ export class DataMethods {
             }) as any;
             return new DataStackDocument(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [CreateRecord]', err.response);
+            logError('[ERROR] [CreateRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1090,7 +1109,7 @@ export class DataMethods {
             }) as any;
             return new DataStackDocument(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [CascadeRecord]', err.response);
+            logError('[ERROR] [CascadeRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1106,7 +1125,7 @@ export class DataMethods {
             }) as any;
             return new ErrorResponse({ statusCode: 200, body: resp.body });
         } catch (err: any) {
-            console.error('[ERROR] [DeleteRecord]', err.response);
+            logError('[ERROR] [DeleteRecord]', err);
             throw new ErrorResponse(err.response);
         }
     }
@@ -1115,7 +1134,7 @@ export class DataMethods {
         try {
             return new MathAPI();
         } catch (err: any) {
-            console.error('[ERROR] [PrepareMath]', err);
+            logError('[ERROR] [PrepareMath]', err);
             throw new ErrorResponse(err);
         }
     }
@@ -1131,7 +1150,7 @@ export class DataMethods {
             }) as any;
             return new DataStackDocument(resp.body);
         } catch (err: any) {
-            console.error('[ERROR] [ApplyMath]', err.response);
+            logError('[ERROR] [ApplyMath]', err);
             throw new ErrorResponse(err.response);
         }
     }
