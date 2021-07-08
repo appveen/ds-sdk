@@ -34,7 +34,7 @@ exports.authenticateByToken = authenticateByToken;
 function logError(message, err) {
     if (err) {
         if (err.response) {
-            logger.error(message, err.statusCode, err.body);
+            logger.error(message, err.response.statusCode, err.response.body);
         }
         else {
             logger.error(message, err);
@@ -66,7 +66,7 @@ class AuthHandler {
                 const resp = yield got_1.default.post(this.api + '/login', { json: payload, responseType: 'json' });
                 const data = resp.body;
                 this.patchData(data);
-                logger.info('Authentication Successful');
+                logger.info('Authentication Successfull');
                 if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
                     logger.info('Creating HB Routine');
                     this.createHBRoutine();
@@ -565,7 +565,7 @@ class DSDataService {
                     responseType: 'json',
                     json: {}
                 });
-                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+                return new types_1.SuccessResponse(resp.body);
             }
             catch (err) {
                 logError('[ERROR] [Start]', err);
@@ -583,7 +583,7 @@ class DSDataService {
                     responseType: 'json',
                     json: {}
                 });
-                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+                return new types_1.SuccessResponse(resp.body);
             }
             catch (err) {
                 logError('[ERROR] [Stop]', err);
@@ -601,7 +601,7 @@ class DSDataService {
                     responseType: 'json',
                     json: {}
                 });
-                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+                return new types_1.SuccessResponse(resp.body);
             }
             catch (err) {
                 logError('[ERROR] [ScaleUp]', err);
@@ -619,7 +619,7 @@ class DSDataService {
                     responseType: 'json',
                     json: {}
                 });
-                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+                return new types_1.SuccessResponse(resp.body);
             }
             catch (err) {
                 logError('[ERROR] [ScaleDown]', err);
@@ -637,7 +637,7 @@ class DSDataService {
                     responseType: 'json',
                     json: {}
                 });
-                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+                return new types_1.SuccessResponse(resp.body);
             }
             catch (err) {
                 logError('[ERROR] [Repair]', err);
@@ -1155,7 +1155,7 @@ class DataMethods {
                     responseType: 'json',
                     json: {}
                 });
-                return new types_1.ErrorResponse({ statusCode: 200, body: resp.body });
+                return new types_1.SuccessResponse(resp.body);
             }
             catch (err) {
                 logError('[ERROR] [DeleteRecord]', err);

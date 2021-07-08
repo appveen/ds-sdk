@@ -162,6 +162,11 @@ export declare class ErrorResponse {
     message?: string;
     constructor(data: ErrorResponse | any);
 }
+export declare class SuccessResponse {
+    message?: string;
+    [key: string]: any;
+    constructor(data: ErrorResponse | any);
+}
 export declare class DataStackDocument {
     _id: number | undefined;
     _metadata: Metadata | undefined;

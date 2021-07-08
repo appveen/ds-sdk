@@ -2,7 +2,7 @@ import got from 'got';
 import { assignIn } from 'lodash';
 import { interval } from 'rxjs';
 import { getLogger } from 'log4js';
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SchemaFieldTypes } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SchemaFieldTypes, SuccessResponse } from './types';
 
 var authData: AuthHandler;
 var logger = getLogger('@appveen/ds-sdk');
@@ -22,7 +22,7 @@ export function authenticateByToken(creds: Credentials): Promise<DataStack> {
 function logError(message: string, err: any) {
     if (err) {
         if (err.response) {
-            logger.error(message, err.statusCode, err.body);
+            logger.error(message, err.response.statusCode, err.response.body);
         } else {
             logger.error(message, err);
         }
@@ -545,7 +545,7 @@ export class DSDataService {
                 responseType: 'json',
                 json: {}
             }) as any;
-            return new ErrorResponse({ statusCode: 200, body: resp.body });
+            return new SuccessResponse(resp.body);
         } catch (err: any) {
             logError('[ERROR] [Start]', err);
             throw new ErrorResponse(err.response);
@@ -561,7 +561,7 @@ export class DSDataService {
                 responseType: 'json',
                 json: {}
             }) as any;
-            return new ErrorResponse({ statusCode: 200, body: resp.body });
+            return new SuccessResponse(resp.body);
         } catch (err: any) {
             logError('[ERROR] [Stop]', err);
             throw new ErrorResponse(err.response);
@@ -577,7 +577,7 @@ export class DSDataService {
                 responseType: 'json',
                 json: {}
             }) as any;
-            return new ErrorResponse({ statusCode: 200, body: resp.body });
+            return new SuccessResponse(resp.body);
         } catch (err: any) {
             logError('[ERROR] [ScaleUp]', err);
             throw new ErrorResponse(err.response);
@@ -593,7 +593,7 @@ export class DSDataService {
                 responseType: 'json',
                 json: {}
             }) as any;
-            return new ErrorResponse({ statusCode: 200, body: resp.body });
+            return new SuccessResponse(resp.body);
         } catch (err: any) {
             logError('[ERROR] [ScaleDown]', err);
             throw new ErrorResponse(err.response);
@@ -609,7 +609,7 @@ export class DSDataService {
                 responseType: 'json',
                 json: {}
             }) as any;
-            return new ErrorResponse({ statusCode: 200, body: resp.body });
+            return new SuccessResponse(resp.body);
         } catch (err: any) {
             logError('[ERROR] [Repair]', err);
             throw new ErrorResponse(err.response);
@@ -1123,7 +1123,7 @@ export class DataMethods {
                 responseType: 'json',
                 json: {}
             }) as any;
-            return new ErrorResponse({ statusCode: 200, body: resp.body });
+            return new SuccessResponse(resp.body);
         } catch (err: any) {
             logError('[ERROR] [DeleteRecord]', err);
             throw new ErrorResponse(err.response);

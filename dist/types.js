@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SchemaFieldProperties = exports.SchemaFieldTypes = exports.SchemaField = exports.WebHook = exports.Metadata = exports.DataStackDocument = exports.ErrorResponse = exports.RoleMethods = exports.RoleBlock = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
+exports.SchemaFieldProperties = exports.SchemaFieldTypes = exports.SchemaField = exports.WebHook = exports.Metadata = exports.DataStackDocument = exports.SuccessResponse = exports.ErrorResponse = exports.RoleMethods = exports.RoleBlock = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
 const lodash_1 = require("lodash");
 class App {
     constructor(data) {
@@ -230,12 +230,25 @@ var RoleMethods;
 })(RoleMethods = exports.RoleMethods || (exports.RoleMethods = {}));
 class ErrorResponse {
     constructor(data) {
-        this.statusCode = data === null || data === void 0 ? void 0 : data.statusCode;
-        this.body = data === null || data === void 0 ? void 0 : data.body;
-        this.message = data === null || data === void 0 ? void 0 : data.statusMessage;
+        if (typeof data === 'string') {
+            this.statusCode = 500;
+            this.body = { message: data };
+            this.message = 'Internal Error';
+        }
+        else {
+            this.statusCode = data === null || data === void 0 ? void 0 : data.statusCode;
+            this.body = data === null || data === void 0 ? void 0 : data.body;
+            this.message = data === null || data === void 0 ? void 0 : data.statusMessage;
+        }
     }
 }
 exports.ErrorResponse = ErrorResponse;
+class SuccessResponse {
+    constructor(data) {
+        this.message = data === null || data === void 0 ? void 0 : data.statusMessage;
+    }
+}
+exports.SuccessResponse = SuccessResponse;
 class DataStackDocument {
     constructor(data) {
         Object.assign(this, data);

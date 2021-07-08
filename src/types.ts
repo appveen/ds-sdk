@@ -348,8 +348,22 @@ export class ErrorResponse {
     body?: object;
     message?: string;
     constructor(data: ErrorResponse | any) {
-        this.statusCode = data?.statusCode;
-        this.body = data?.body;
+        if (typeof data === 'string') {
+            this.statusCode = 500;
+            this.body = { message: data };
+            this.message = 'Internal Error';
+        } else {
+            this.statusCode = data?.statusCode;
+            this.body = data?.body;
+            this.message = data?.statusMessage;
+        }
+    }
+}
+
+export class SuccessResponse {
+    message?: string;
+    [key: string]: any;
+    constructor(data: ErrorResponse | any) {
         this.message = data?.statusMessage;
     }
 }
