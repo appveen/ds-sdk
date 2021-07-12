@@ -192,7 +192,10 @@ export class DataStack {
 
     public async ListApps(): Promise<DSApp[]> {
         try {
+            const searchParams = new URLSearchParams();
+            searchParams.append('count', '-1');
             let resp = await got.get(this.api, {
+                searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -271,6 +274,42 @@ export class DSApp {
         };
     }
 
+    public async RepairAllDataServices(): Promise<SuccessResponse[]> {
+        try {
+            const filter = { app: this.app._id };
+            let searchParams = new URLSearchParams();
+            searchParams.append('filter', JSON.stringify(filter));
+            searchParams.append('count', '-1');
+            const resp = await got.get(authData.creds.host + '/api/a/sm/service', {
+                searchParams: searchParams,
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            if (resp.body && resp.body.length > 0) {
+                let promises = resp.body.map(async (e: any) => {
+                    logger.info('Repairing Data Service', e._id);
+                    let resp = await got.put(authData.creds.host + `/api/a/sm/${e._id}/repair`, {
+                        headers: {
+                            Authorization: 'JWT ' + authData.token
+                        },
+                        responseType: 'json',
+                        json: {}
+                    }) as any;
+                    return new SuccessResponse(resp.body);
+                });
+                promises = await Promise.all(promises);
+                return promises;
+            } else {
+                return [];
+            }
+        } catch (err: any) {
+            logError('[ERROR] [StartAllDataServices]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
     public async StartAllDataServices(): Promise<DSApp> {
         try {
             let resp = await got.put(this.managementAPIs.serviceStart, {
@@ -308,6 +347,47 @@ export class DSApp {
             const filter = { app: this.app._id };
             const searchParams = new URLSearchParams();
             searchParams.append('filter', JSON.stringify(filter));
+            searchParams.append('count', '-1');
+            let resp = await got.get(this.api, {
+                searchParams: searchParams,
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return resp.body.map((item: any) => {
+                new DSDataService(this.app, item);
+            });
+        } catch (err: any) {
+            logError('[ERROR] [ListDataServices]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async SearchDataServices(options: ListOptions): Promise<DSDataService[]> {
+        try {
+            const searchParams = new URLSearchParams();
+            if (!options) {
+                options = new ListOptions();
+            }
+            if (options.filter) {
+                options.filter.app = this.app._id;
+                searchParams.append('filter', JSON.stringify(options.filter));
+            }
+            if (options.sort) {
+                searchParams.append('sort', (options.sort));
+            }
+            if (options.select) {
+                searchParams.append('select', (options.select));
+            }
+            if (options.page) {
+                searchParams.append('page', (options.page + ''));
+            }
+            if (options.count) {
+                searchParams.append('count', (options.count) + '');
+            } else {
+                searchParams.append('count', '30');
+            }
             let resp = await got.get(this.api, {
                 searchParams: searchParams,
                 headers: {

@@ -156,15 +156,15 @@ export class ListOptions {
     sort: string | undefined;
     page: number | undefined;
     count: number | undefined;
-    filter: object | undefined;
+    filter: any | undefined;
     expand: boolean;
-    constructor(data: ListOptions) {
-        this.select = data.select;
-        this.sort = data.sort;
-        this.page = data.page;
-        this.count = data.count;
-        this.filter = data.filter;
-        this.expand = data.expand || false;
+    constructor(data?: ListOptions) {
+        this.select = data?.select;
+        this.sort = data?.sort;
+        this.page = data?.page;
+        this.count = data?.count || 30;
+        this.filter = data?.filter || {};
+        this.expand = data?.expand || false;
     }
 }
 
@@ -361,10 +361,10 @@ export class ErrorResponse {
 }
 
 export class SuccessResponse {
-    message?: string;
+    message: string;
     [key: string]: any;
-    constructor(data: ErrorResponse | any) {
-        this.message = data?.statusMessage;
+    constructor(data: SuccessResponse | any) {
+        this.message = data?.message;
     }
 }
 

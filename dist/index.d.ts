@@ -1,4 +1,4 @@
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse } from './types';
 export declare function authenticateByCredentials(creds: Credentials): Promise<DataStack>;
 export declare function authenticateByToken(creds: Credentials): Promise<DataStack>;
 export declare class DataStack {
@@ -14,9 +14,11 @@ export declare class DSApp {
     api: string;
     private managementAPIs;
     constructor(app: App);
+    RepairAllDataServices(): Promise<SuccessResponse[]>;
     StartAllDataServices(): Promise<DSApp>;
     StopAllDataServices(): Promise<DSApp>;
     ListDataServices(): Promise<DSDataService[]>;
+    SearchDataServices(options: ListOptions): Promise<DSDataService[]>;
     DataService(name: string): Promise<DSDataService>;
     CreateDataService(name: string, description?: string): Promise<DSDataService>;
 }

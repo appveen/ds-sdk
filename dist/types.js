@@ -94,12 +94,12 @@ class Credentials {
 exports.Credentials = Credentials;
 class ListOptions {
     constructor(data) {
-        this.select = data.select;
-        this.sort = data.sort;
-        this.page = data.page;
-        this.count = data.count;
-        this.filter = data.filter;
-        this.expand = data.expand || false;
+        this.select = data === null || data === void 0 ? void 0 : data.select;
+        this.sort = data === null || data === void 0 ? void 0 : data.sort;
+        this.page = data === null || data === void 0 ? void 0 : data.page;
+        this.count = (data === null || data === void 0 ? void 0 : data.count) || 30;
+        this.filter = (data === null || data === void 0 ? void 0 : data.filter) || {};
+        this.expand = (data === null || data === void 0 ? void 0 : data.expand) || false;
     }
 }
 exports.ListOptions = ListOptions;
@@ -245,7 +245,7 @@ class ErrorResponse {
 exports.ErrorResponse = ErrorResponse;
 class SuccessResponse {
     constructor(data) {
-        this.message = data === null || data === void 0 ? void 0 : data.statusMessage;
+        this.message = data === null || data === void 0 ? void 0 : data.message;
     }
 }
 exports.SuccessResponse = SuccessResponse;

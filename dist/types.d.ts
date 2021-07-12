@@ -86,9 +86,9 @@ export declare class ListOptions {
     sort: string | undefined;
     page: number | undefined;
     count: number | undefined;
-    filter: object | undefined;
+    filter: any | undefined;
     expand: boolean;
-    constructor(data: ListOptions);
+    constructor(data?: ListOptions);
 }
 export declare class DataService {
     _id: string | undefined;
@@ -163,9 +163,9 @@ export declare class ErrorResponse {
     constructor(data: ErrorResponse | any);
 }
 export declare class SuccessResponse {
-    message?: string;
+    message: string;
     [key: string]: any;
-    constructor(data: ErrorResponse | any);
+    constructor(data: SuccessResponse | any);
 }
 export declare class DataStackDocument {
     _id: number | undefined;

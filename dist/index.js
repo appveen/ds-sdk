@@ -192,7 +192,10 @@ class DataStack {
     ListApps() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                const searchParams = new URLSearchParams();
+                searchParams.append('count', '-1');
                 let resp = yield got_1.default.get(this.api, {
+                    searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -275,6 +278,45 @@ class DSApp {
             serviceStart: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/start'
         };
     }
+    RepairAllDataServices() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const filter = { app: this.app._id };
+                let searchParams = new URLSearchParams();
+                searchParams.append('filter', JSON.stringify(filter));
+                searchParams.append('count', '-1');
+                const resp = yield got_1.default.get(authData.creds.host + '/api/a/sm/service', {
+                    searchParams: searchParams,
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                if (resp.body && resp.body.length > 0) {
+                    let promises = resp.body.map((e) => __awaiter(this, void 0, void 0, function* () {
+                        logger.info('Repairing Data Service', e._id);
+                        let resp = yield got_1.default.put(authData.creds.host + `/api/a/sm/${e._id}/repair`, {
+                            headers: {
+                                Authorization: 'JWT ' + authData.token
+                            },
+                            responseType: 'json',
+                            json: {}
+                        });
+                        return new types_1.SuccessResponse(resp.body);
+                    }));
+                    promises = yield Promise.all(promises);
+                    return promises;
+                }
+                else {
+                    return [];
+                }
+            }
+            catch (err) {
+                logError('[ERROR] [StartAllDataServices]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
     StartAllDataServices() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -317,6 +359,50 @@ class DSApp {
                 const filter = { app: this.app._id };
                 const searchParams = new URLSearchParams();
                 searchParams.append('filter', JSON.stringify(filter));
+                searchParams.append('count', '-1');
+                let resp = yield got_1.default.get(this.api, {
+                    searchParams: searchParams,
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return resp.body.map((item) => {
+                    new DSDataService(this.app, item);
+                });
+            }
+            catch (err) {
+                logError('[ERROR] [ListDataServices]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    SearchDataServices(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const searchParams = new URLSearchParams();
+                if (!options) {
+                    options = new types_1.ListOptions();
+                }
+                if (options.filter) {
+                    options.filter.app = this.app._id;
+                    searchParams.append('filter', JSON.stringify(options.filter));
+                }
+                if (options.sort) {
+                    searchParams.append('sort', (options.sort));
+                }
+                if (options.select) {
+                    searchParams.append('select', (options.select));
+                }
+                if (options.page) {
+                    searchParams.append('page', (options.page + ''));
+                }
+                if (options.count) {
+                    searchParams.append('count', (options.count) + '');
+                }
+                else {
+                    searchParams.append('count', '30');
+                }
                 let resp = yield got_1.default.get(this.api, {
                     searchParams: searchParams,
                     headers: {
