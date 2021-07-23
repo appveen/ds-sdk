@@ -2,10 +2,11 @@ import got from 'got';
 import { assignIn } from 'lodash';
 import { interval } from 'rxjs';
 import { getLogger } from 'log4js';
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SchemaFieldTypes, SuccessResponse } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse } from './types';
+import { LIB_VERSION } from './version';
 
 var authData: AuthHandler;
-var logger = getLogger('@appveen/ds-sdk');
+var logger = getLogger(`[@appveen/ds-sdk] [${LIB_VERSION}]`);
 logger.level = 'error';
 
 export function authenticateByCredentials(creds: Credentials): Promise<DataStack> {

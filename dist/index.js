@@ -18,8 +18,9 @@ const lodash_1 = require("lodash");
 const rxjs_1 = require("rxjs");
 const log4js_1 = require("log4js");
 const types_1 = require("./types");
+const version_1 = require("./version");
 var authData;
-var logger = log4js_1.getLogger('@appveen/ds-sdk');
+var logger = log4js_1.getLogger(`[@appveen/ds-sdk] [${version_1.LIB_VERSION}]`);
 logger.level = 'error';
 function authenticateByCredentials(creds) {
     if (creds.trace) {
