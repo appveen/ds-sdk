@@ -96,6 +96,16 @@ class AuthHandler {
         }
     }
 
+    async logout(): Promise<void> {
+        try {
+            const resp = await got.delete(this.api + '/logout', { responseType: 'json' });
+            logger.info('Logged out Successfull');
+            this.clearRoutine();
+        } catch (err: any) {
+            throw new ErrorResponse(err.response);
+        }
+    }
+
     async authenticateByToken(): Promise<DataStack> {
         try {
             const resp = await got.get(this.api + '/check', { responseType: 'json' });
@@ -176,6 +186,15 @@ class AuthHandler {
         });
     }
 
+    private clearRoutine() {
+        if (this.hbRoutine) {
+            this.hbRoutine.unsubscribe();
+        }
+        if (this.refreshRoutine) {
+            this.refreshRoutine.unsubscribe();
+        }
+    }
+
     private patchData(data: any) {
         this._id = data?._id;
         this.uuid = data?.uuid;
@@ -202,6 +221,16 @@ export class DataStack {
     constructor() {
         this.api = authData.creds.host + '/api/a/rbac/app';
     }
+
+    public async Logout(): Promise<void> {
+        try {
+            return authData.logout();
+        } catch (err: any) {
+            logError('[ERROR] [Logout]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
 
     public async ListApps(): Promise<DSApp[]> {
         try {

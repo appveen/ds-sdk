@@ -131,6 +131,19 @@ Type `string`
 
 The Password of a user / API key of Bot.
 
+##### **_trace_**
+
+Type `boolean`
+
+If `True` it will log all SDK events. `Default: false`
+
+
+##### **_logger_**
+
+Type `Logger`
+
+To pass a custom logger for logging events and errors
+
 <hr>
 
 ### **authenticateByToken(credentials)**
@@ -153,11 +166,29 @@ Type `string`
 
 The JWT token of a User / Bot
 
+##### **_trace_**
+
+Type `boolean`
+
+If `True` it will log all SDK events. `Default: false`
+
+
+##### **_logger_**
+
+Type `Logger`
+
+To pass a custom logger for logging events and errors
+
 <hr>
 
 ### **DataStack**
 
 The object contains utility methods to access DataStack.
+
+
+#### **Logout()**
+
+Returns a Void Promise.
 
 #### **App(name)**
 

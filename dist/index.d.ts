@@ -4,6 +4,7 @@ export declare function authenticateByToken(creds: Credentials): Promise<DataSta
 export declare class DataStack {
     api: string;
     constructor();
+    Logout(): Promise<void>;
     ListApps(): Promise<DSApp[]>;
     App(name: string): Promise<DSApp>;
     CreateApp(name: string): Promise<DSApp>;

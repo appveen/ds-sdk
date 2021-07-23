@@ -95,6 +95,18 @@ class AuthHandler {
             }
         });
     }
+    logout() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const resp = yield got_1.default.delete(this.api + '/logout', { responseType: 'json' });
+                logger.info('Logged out Successfull');
+                this.clearRoutine();
+            }
+            catch (err) {
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
     authenticateByToken() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -181,6 +193,14 @@ class AuthHandler {
             }
         }));
     }
+    clearRoutine() {
+        if (this.hbRoutine) {
+            this.hbRoutine.unsubscribe();
+        }
+        if (this.refreshRoutine) {
+            this.refreshRoutine.unsubscribe();
+        }
+    }
     patchData(data) {
         this._id = data === null || data === void 0 ? void 0 : data._id;
         this.uuid = data === null || data === void 0 ? void 0 : data.uuid;
@@ -201,6 +221,17 @@ class AuthHandler {
 class DataStack {
     constructor() {
         this.api = authData.creds.host + '/api/a/rbac/app';
+    }
+    Logout() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                return authData.logout();
+            }
+            catch (err) {
+                logError('[ERROR] [Logout]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
     }
     ListApps() {
         return __awaiter(this, void 0, void 0, function* () {
