@@ -101,7 +101,7 @@ export declare class DataMethods {
     data: DataService;
     api: string;
     constructor(app: App, data: DataService);
-    CountRecords(): Promise<number>;
+    CountRecords(filter?: any): Promise<number>;
     ListRecords(options: ListOptions): Promise<DataStackDocument[]>;
     GetRecord(id: string): Promise<DataStackDocument>;
     UpdateRecord(id: string, data: any): Promise<DataStackDocument>;

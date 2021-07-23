@@ -1102,10 +1102,13 @@ export class DataMethods {
         this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api;
     }
 
-    public async CountRecords(): Promise<number> {
+    public async CountRecords(filter?: any): Promise<number> {
         try {
             const searchParams = new URLSearchParams();
             searchParams.append('countOnly', 'true');
+            if (filter) {
+                searchParams.append('filter', JSON.stringify(filter));
+            }
             let resp = await got.get(this.api, {
                 headers: {
                     Authorization: 'JWT ' + authData.token

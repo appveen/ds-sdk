@@ -1127,11 +1127,14 @@ class DataMethods {
         this.data = data;
         this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api;
     }
-    CountRecords() {
+    CountRecords(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const searchParams = new URLSearchParams();
                 searchParams.append('countOnly', 'true');
+                if (filter) {
+                    searchParams.append('filter', JSON.stringify(filter));
+                }
                 let resp = yield got_1.default.get(this.api, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
