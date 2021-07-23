@@ -6,15 +6,27 @@ import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDoc
 
 var authData: AuthHandler;
 var logger = getLogger('@appveen/ds-sdk');
-logger.level = process.env.LOG_LEVEL || 'info';
+logger.level = 'error';
 
 export function authenticateByCredentials(creds: Credentials): Promise<DataStack> {
+    if (creds.trace) {
+        logger.level = 'info';
+    }
+    if (creds.logger) {
+        logger = logger;
+    }
     authData = new AuthHandler(creds);
     return authData.login();
 }
 
 export function authenticateByToken(creds: Credentials): Promise<DataStack> {
     authData = new AuthHandler(creds);
+    if (creds.trace) {
+        logger.level = 'info';
+    }
+    if (creds.logger) {
+        logger = logger;
+    }
     return authData.authenticateByToken();
 }
 

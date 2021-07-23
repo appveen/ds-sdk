@@ -20,14 +20,26 @@ const log4js_1 = require("log4js");
 const types_1 = require("./types");
 var authData;
 var logger = log4js_1.getLogger('@appveen/ds-sdk');
-logger.level = process.env.LOG_LEVEL || 'info';
+logger.level = 'error';
 function authenticateByCredentials(creds) {
+    if (creds.trace) {
+        logger.level = 'info';
+    }
+    if (creds.logger) {
+        logger = logger;
+    }
     authData = new AuthHandler(creds);
     return authData.login();
 }
 exports.authenticateByCredentials = authenticateByCredentials;
 function authenticateByToken(creds) {
     authData = new AuthHandler(creds);
+    if (creds.trace) {
+        logger.level = 'info';
+    }
+    if (creds.logger) {
+        logger = logger;
+    }
     return authData.authenticateByToken();
 }
 exports.authenticateByToken = authenticateByToken;

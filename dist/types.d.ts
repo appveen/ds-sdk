@@ -1,3 +1,4 @@
+import { Logger } from 'log4js';
 export declare class App {
     _id: string | undefined;
     description: string | undefined;
@@ -79,6 +80,14 @@ export declare class Credentials {
      * @description Available Authentication Token
      */
     token?: string | undefined;
+    /**
+     * @description Enable trace logging
+     */
+    trace?: boolean;
+    /**
+     * @description Provide a custom logger.
+     */
+    logger?: Logger;
     constructor(data?: Credentials);
 }
 export declare class ListOptions {
