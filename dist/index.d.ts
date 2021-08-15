@@ -1,4 +1,4 @@
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond } from './types';
 export declare function authenticateByCredentials(creds: Credentials): Promise<DataStack>;
 export declare function authenticateByToken(creds: Credentials): Promise<DataStack>;
 export declare class DataStack {
@@ -14,7 +14,9 @@ export declare class DSApp {
     app: App;
     api: string;
     private managementAPIs;
+    private dataServiceMap;
     constructor(app: App);
+    private CreateDataServiceMap;
     RepairAllDataServices(): Promise<SuccessResponse[]>;
     StartAllDataServices(): Promise<DSApp>;
     StopAllDataServices(): Promise<DSApp>;
@@ -22,6 +24,7 @@ export declare class DSApp {
     SearchDataServices(options: ListOptions): Promise<DSDataService[]>;
     DataService(name: string): Promise<DSDataService>;
     CreateDataService(name: string, description?: string): Promise<DSDataService>;
+    TransactionAPI(): TransactionMethods;
 }
 export declare class DSDataService {
     app: App;
@@ -54,6 +57,7 @@ export declare class DSDataService {
     getSchema(): DSDataServiceSchema;
     setSchema(data: DSDataServiceSchema): Promise<DSDataService>;
     DataAPIs(): DataMethods;
+    WorkflowAPIs(): WorkflowMethods;
     private createPayload;
     private cleanPayload;
 }
@@ -107,7 +111,6 @@ export declare class DataMethods {
     UpdateRecord(id: string, data: any): Promise<DataStackDocument>;
     UpsertRecord(id: string, data: any): Promise<DataStackDocument>;
     CreateRecord(data: any): Promise<DataStackDocument>;
-    CascadeRecord(data: any): Promise<DataStackDocument>;
     DeleteRecord(id: string): Promise<ErrorResponse>;
     PrepareMath(): MathAPI;
     ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;
@@ -120,6 +123,31 @@ export declare class MathAPI {
     Increment(num: number): this;
     Multiply(num: number): this;
     CreatePayload(): any;
+}
+export declare class WorkflowMethods {
+    app: App;
+    data: DataService;
+    api: string;
+    constructor(app: App, data: DataService);
+    private getPendingRecordIdsOfUser;
+    CreateRespondData(): WorkflowRespond;
+    ApproveRecords(ids: string[], respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse>;
+    RejectRecords(ids: string[], respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse>;
+    ReworkRecords(ids: string[], respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse>;
+    ApproveRecordsRequestedBy(user: string, respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse>;
+    RejectRecordsRequestedBy(user: string, respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse>;
+    ReworkRecordsRequestedBy(user: string, respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse>;
+}
+export declare class TransactionMethods {
+    app: App;
+    api: string;
+    private dataServiceMap;
+    private payload;
+    constructor(app: App, dataServiceMap: any);
+    CreateOperation(dataService: string, data: DataStackDocument): TransactionMethods;
+    UpdateOperation(dataService: string, data: DataStackDocument, upsert?: boolean): TransactionMethods;
+    DeleteOperation(dataService: string, data: DataStackDocument): TransactionMethods;
+    Execute(): Promise<any | ErrorResponse>;
 }
 declare const _default: {
     authenticateByCredentials: typeof authenticateByCredentials;

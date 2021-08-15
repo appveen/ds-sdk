@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SchemaFieldProperties = exports.SchemaFieldTypes = exports.SchemaField = exports.WebHook = exports.Metadata = exports.DataStackDocument = exports.SuccessResponse = exports.ErrorResponse = exports.RoleMethods = exports.RoleBlock = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
+exports.WorkflowRespond = exports.WorkflowActions = exports.SchemaFieldProperties = exports.SchemaFieldTypes = exports.SchemaField = exports.WebHook = exports.Metadata = exports.DataStackDocument = exports.SuccessResponse = exports.ErrorResponse = exports.RoleMethods = exports.RoleBlock = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
 const lodash_1 = require("lodash");
+const fs_1 = require("fs");
 class App {
     constructor(data) {
         this._id = data === null || data === void 0 ? void 0 : data._id;
@@ -449,3 +450,42 @@ class SchemaFieldProperties {
     }
 }
 exports.SchemaFieldProperties = SchemaFieldProperties;
+var WorkflowActions;
+(function (WorkflowActions) {
+    WorkflowActions["DISCARD"] = "Discard";
+    WorkflowActions["SUBMIT"] = "Submit";
+    WorkflowActions["REWORK"] = "Rework";
+    WorkflowActions["APPROVE"] = "Approve";
+    WorkflowActions["REJECT"] = "Reject";
+})(WorkflowActions = exports.WorkflowActions || (exports.WorkflowActions = {}));
+class WorkflowRespond {
+    constructor(data) {
+        this.remarks = data === null || data === void 0 ? void 0 : data.remarks;
+        this.attachments = (data === null || data === void 0 ? void 0 : data.attachments) || [];
+    }
+    // public AddFileFromBuffer(data: any): WorkflowRespond {
+    //     return this;
+    // }
+    AddFileFromPath(filePath) {
+        fs_1.readFileSync(filePath);
+        return this;
+    }
+    RemoveFile(name) {
+        const index = this.attachments.findIndex(e => e.name === name);
+        if (index > -1) {
+            this.attachments.splice(index, 1);
+        }
+        return this;
+    }
+    SetRemarks(text) {
+        this.remarks = text;
+        return this;
+    }
+    CreatePayload() {
+        return {
+            remarks: this.remarks,
+            attachments: this.attachments
+        };
+    }
+}
+exports.WorkflowRespond = WorkflowRespond;

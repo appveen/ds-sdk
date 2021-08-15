@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MathAPI = exports.DataMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRole = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
+exports.TransactionMethods = exports.WorkflowMethods = exports.MathAPI = exports.DataMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRole = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
 const got_1 = __importDefault(require("got"));
 const lodash_1 = require("lodash");
 const rxjs_1 = require("rxjs");
@@ -27,7 +27,7 @@ function authenticateByCredentials(creds) {
         logger.level = 'info';
     }
     if (creds.logger) {
-        logger = logger;
+        logger = creds.logger;
     }
     authData = new AuthHandler(creds);
     return authData.login();
@@ -39,7 +39,7 @@ function authenticateByToken(creds) {
         logger.level = 'info';
     }
     if (creds.logger) {
-        logger = logger;
+        logger = creds.logger;
     }
     return authData.authenticateByToken();
 }
@@ -225,7 +225,7 @@ class DataStack {
     Logout() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                return authData.logout();
+                return yield authData.logout();
             }
             catch (err) {
                 logError('[ERROR] [Logout]', err);
@@ -321,6 +321,27 @@ class DSApp {
             serviceStop: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/stop',
             serviceStart: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/start'
         };
+        this.dataServiceMap = {};
+        this.CreateDataServiceMap();
+    }
+    CreateDataServiceMap() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const filter = { app: this.app._id };
+            const searchParams = new URLSearchParams();
+            searchParams.append('filter', JSON.stringify(filter));
+            searchParams.append('count', '-1');
+            searchParams.append('select', '_id,name');
+            let resp = yield got_1.default.get(this.api, {
+                searchParams: searchParams,
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            });
+            return resp.body.map((item) => {
+                this.dataServiceMap[item.name] = item._id;
+            });
+        });
     }
     RepairAllDataServices() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -510,6 +531,9 @@ class DSApp {
                 throw new types_1.ErrorResponse(err.response);
             }
         });
+    }
+    TransactionAPI() {
+        return new TransactionMethods(this.app, this.dataServiceMap);
     }
 }
 exports.DSApp = DSApp;
@@ -864,6 +888,9 @@ class DSDataService {
     }
     DataAPIs() {
         return new DataMethods(this.app, this.data);
+    }
+    WorkflowAPIs() {
+        return new WorkflowMethods(this.app, this.data);
     }
     createPayload() {
         const data = JSON.parse(JSON.stringify(this.data));
@@ -1260,24 +1287,6 @@ class DataMethods {
             }
         });
     }
-    CascadeRecord(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                let resp = yield got_1.default.post(this.api + '?cascade=true', {
-                    headers: {
-                        Authorization: 'JWT ' + authData.token
-                    },
-                    responseType: 'json',
-                    json: data
-                });
-                return new types_1.DataStackDocument(resp.body);
-            }
-            catch (err) {
-                logError('[ERROR] [CascadeRecord]', err);
-                throw new types_1.ErrorResponse(err.response);
-            }
-        });
-    }
     DeleteRecord(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -1355,4 +1364,233 @@ class MathAPI {
     }
 }
 exports.MathAPI = MathAPI;
+class WorkflowMethods {
+    constructor(app, data) {
+        this.app = app;
+        this.data = data;
+        this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api + '/utils/workflow';
+    }
+    getPendingRecordIdsOfUser(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const searchParams = new URLSearchParams();
+                searchParams.append('select', '_id');
+                searchParams.append('count', '-1');
+                searchParams.append('filter', JSON.stringify({ requestedBy: user, status: 'Pending' }));
+                let resp = yield got_1.default.get(this.api + '/action', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    searchParams: searchParams,
+                    responseType: 'json',
+                });
+                return resp.body.map((e) => e._id);
+            }
+            catch (err) {
+                logError('[ERROR] [getPendingRecordIdsOfUser]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    CreateRespondData() {
+        return new types_1.WorkflowRespond();
+    }
+    ApproveRecords(ids, respondData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!respondData) {
+                    respondData = new types_1.WorkflowRespond();
+                }
+                const payload = respondData.CreatePayload();
+                payload.action = types_1.WorkflowActions.APPROVE;
+                payload.ids = ids;
+                let resp = yield got_1.default.put(this.api + '/action', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: payload
+                });
+                return resp.body;
+            }
+            catch (err) {
+                logError('[ERROR] [ApproveRecords]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    RejectRecords(ids, respondData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!respondData) {
+                    respondData = new types_1.WorkflowRespond();
+                }
+                const payload = respondData.CreatePayload();
+                payload.action = types_1.WorkflowActions.REJECT;
+                payload.ids = ids;
+                let resp = yield got_1.default.put(this.api + '/action', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: payload
+                });
+                return resp.body;
+            }
+            catch (err) {
+                logError('[ERROR] [RejectRecords]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    ReworkRecords(ids, respondData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!respondData) {
+                    respondData = new types_1.WorkflowRespond();
+                }
+                const payload = respondData.CreatePayload();
+                payload.action = types_1.WorkflowActions.REWORK;
+                payload.ids = ids;
+                let resp = yield got_1.default.put(this.api + '/action', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: payload
+                });
+                return resp.body;
+            }
+            catch (err) {
+                logError('[ERROR] [ReworkRecords]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    ApproveRecordsRequestedBy(user, respondData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!respondData) {
+                    respondData = new types_1.WorkflowRespond();
+                }
+                const payload = respondData.CreatePayload();
+                payload.action = types_1.WorkflowActions.APPROVE;
+                payload.ids = yield this.getPendingRecordIdsOfUser(user);
+                let resp = yield got_1.default.put(this.api + '/action', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: payload
+                });
+                return resp.body;
+            }
+            catch (err) {
+                logError('[ERROR] [ApproveRecordsRequestedBy]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    RejectRecordsRequestedBy(user, respondData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!respondData) {
+                    respondData = new types_1.WorkflowRespond();
+                }
+                const payload = respondData.CreatePayload();
+                payload.action = types_1.WorkflowActions.REJECT;
+                payload.ids = yield this.getPendingRecordIdsOfUser(user);
+                let resp = yield got_1.default.put(this.api + '/action', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: payload
+                });
+                return resp.body;
+            }
+            catch (err) {
+                logError('[ERROR] [RejectRecordsRequestedBy]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    ReworkRecordsRequestedBy(user, respondData) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!respondData) {
+                    respondData = new types_1.WorkflowRespond();
+                }
+                const payload = respondData.CreatePayload();
+                payload.action = types_1.WorkflowActions.REWORK;
+                payload.ids = yield this.getPendingRecordIdsOfUser(user);
+                let resp = yield got_1.default.put(this.api + '/action', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: payload
+                });
+                return resp.body;
+            }
+            catch (err) {
+                logError('[ERROR] [ReworkRecordsRequestedBy]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+}
+exports.WorkflowMethods = WorkflowMethods;
+class TransactionMethods {
+    constructor(app, dataServiceMap) {
+        this.app = app;
+        this.dataServiceMap = dataServiceMap;
+        this.api = authData.creds.host + '/api/common/txn?app=' + this.app._id;
+        this.payload = [];
+    }
+    CreateOperation(dataService, data) {
+        const temp = {};
+        temp.operation = 'POST';
+        temp.data = data;
+        temp.dataService = this.dataServiceMap[dataService];
+        this.payload.push(temp);
+        return this;
+    }
+    UpdateOperation(dataService, data, upsert) {
+        const temp = {};
+        temp.operation = 'PUT';
+        temp.data = data;
+        temp.upsert = upsert || false;
+        temp.dataService = this.dataServiceMap[dataService];
+        this.payload.push(temp);
+        return this;
+    }
+    DeleteOperation(dataService, data) {
+        const temp = {};
+        temp.operation = 'DELETE';
+        temp.data = data;
+        temp.dataService = this.dataServiceMap[dataService];
+        this.payload.push(temp);
+        return this;
+    }
+    Execute() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.post(this.api, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: this.payload
+                });
+                return resp.body;
+            }
+            catch (err) {
+                logError('[ERROR] [Execute]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+}
+exports.TransactionMethods = TransactionMethods;
 exports.default = { authenticateByCredentials, authenticateByToken };

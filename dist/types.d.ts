@@ -275,3 +275,19 @@ export declare class SchemaFieldProperties {
     getSchema(): string | undefined;
     setSchema(schema: string): void;
 }
+export declare enum WorkflowActions {
+    DISCARD = "Discard",
+    SUBMIT = "Submit",
+    REWORK = "Rework",
+    APPROVE = "Approve",
+    REJECT = "Reject"
+}
+export declare class WorkflowRespond {
+    private remarks;
+    private attachments;
+    constructor(data?: any);
+    AddFileFromPath(filePath: string): WorkflowRespond;
+    RemoveFile(name: string): WorkflowRespond;
+    SetRemarks(text: string | null): WorkflowRespond;
+    CreatePayload(): any;
+}

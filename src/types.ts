@@ -1,4 +1,5 @@
 import { camelCase, startCase } from 'lodash';
+import { readFileSync } from 'fs';
 import { Logger } from 'log4js';
 
 export class App {
@@ -653,4 +654,53 @@ export class SchemaFieldProperties {
         this.schema = schema;
     }
 
+}
+
+
+export enum WorkflowActions {
+    DISCARD = 'Discard',
+    SUBMIT = 'Submit',
+    REWORK = 'Rework',
+    APPROVE = 'Approve',
+    REJECT = 'Reject'
+}
+
+export class WorkflowRespond {
+    private remarks: string | null;
+    private attachments: Array<File>;
+
+    constructor(data?: any) {
+        this.remarks = data?.remarks;
+        this.attachments = data?.attachments || [];
+    }
+
+    // public AddFileFromBuffer(data: any): WorkflowRespond {
+
+    //     return this;
+    // }
+
+    public AddFileFromPath(filePath: string): WorkflowRespond {
+        readFileSync(filePath)
+        return this;
+    }
+
+    public RemoveFile(name: string): WorkflowRespond {
+        const index = this.attachments.findIndex(e => e.name === name);
+        if (index > -1) {
+            this.attachments.splice(index, 1);
+        }
+        return this;
+    }
+
+    public SetRemarks(text: string | null): WorkflowRespond {
+        this.remarks = text;
+        return this;
+    }
+
+    public CreatePayload(): any {
+        return {
+            remarks: this.remarks,
+            attachments: this.attachments
+        };
+    }
 }

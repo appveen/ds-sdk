@@ -2,7 +2,7 @@ import got from 'got';
 import { assignIn } from 'lodash';
 import { interval } from 'rxjs';
 import { getLogger } from 'log4js';
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, WorkflowActions } from './types';
 import { LIB_VERSION } from './version';
 
 var authData: AuthHandler;
@@ -307,6 +307,7 @@ export class DSApp {
     app: App;
     api: string;
     private managementAPIs: any;
+    private dataServiceMap: any;
     constructor(app: App) {
         this.app = new App(app);
         this.api = authData.creds.host + '/api/a/sm/service';
@@ -314,6 +315,26 @@ export class DSApp {
             serviceStop: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/stop',
             serviceStart: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/start'
         };
+        this.dataServiceMap = {};
+        this.CreateDataServiceMap();
+    }
+
+    private async CreateDataServiceMap() {
+        const filter = { app: this.app._id };
+        const searchParams = new URLSearchParams();
+        searchParams.append('filter', JSON.stringify(filter));
+        searchParams.append('count', '-1');
+        searchParams.append('select', '_id,name');
+        let resp = await got.get(this.api, {
+            searchParams: searchParams,
+            headers: {
+                Authorization: 'JWT ' + authData.token
+            },
+            responseType: 'json'
+        }) as any;
+        return resp.body.map((item: any) => {
+            this.dataServiceMap[item.name] = item._id;
+        });
     }
 
     public async RepairAllDataServices(): Promise<SuccessResponse[]> {
@@ -486,6 +507,10 @@ export class DSApp {
             logError('[ERROR] [CreateDataService]', err);
             throw new ErrorResponse(err.response);
         }
+    }
+
+    public TransactionAPI(): TransactionMethods {
+        return new TransactionMethods(this.app, this.dataServiceMap);
     }
 }
 
@@ -821,6 +846,10 @@ export class DSDataService {
 
     public DataAPIs() {
         return new DataMethods(this.app, this.data);
+    }
+
+    public WorkflowAPIs() {
+        return new WorkflowMethods(this.app, this.data);
     }
 
     private createPayload() {
@@ -1223,22 +1252,6 @@ export class DataMethods {
         }
     }
 
-    public async CascadeRecord(data: any): Promise<DataStackDocument> {
-        try {
-            let resp = await got.post(this.api + '?cascade=true', {
-                headers: {
-                    Authorization: 'JWT ' + authData.token
-                },
-                responseType: 'json',
-                json: data
-            }) as any;
-            return new DataStackDocument(resp.body);
-        } catch (err: any) {
-            logError('[ERROR] [CascadeRecord]', err);
-            throw new ErrorResponse(err.response);
-        }
-    }
-
     public async DeleteRecord(id: string): Promise<ErrorResponse> {
         try {
             let resp = await got.delete(this.api + '/' + id, {
@@ -1314,6 +1327,233 @@ export class MathAPI {
 
     CreatePayload() {
         return this.operations;
+    }
+}
+
+export class WorkflowMethods {
+    app: App;
+    data: DataService;
+    api: string;
+    constructor(app: App, data: DataService) {
+        this.app = app;
+        this.data = data;
+        this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api + '/utils/workflow';
+    }
+
+    private async getPendingRecordIdsOfUser(user: string) {
+        try {
+            const searchParams = new URLSearchParams();
+            searchParams.append('select', '_id');
+            searchParams.append('count', '-1');
+            searchParams.append('filter', JSON.stringify({ requestedBy: user, status: 'Pending' }));
+            let resp = await got.get(this.api + '/action', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                searchParams: searchParams,
+                responseType: 'json',
+            }) as any;
+            return resp.body.map((e: any) => e._id);
+        } catch (err: any) {
+            logError('[ERROR] [getPendingRecordIdsOfUser]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public CreateRespondData(): WorkflowRespond {
+        return new WorkflowRespond();
+    }
+
+    public async ApproveRecords(ids: string[], respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse> {
+        try {
+            if (!respondData) {
+                respondData = new WorkflowRespond();
+            }
+            const payload = respondData.CreatePayload();
+            payload.action = WorkflowActions.APPROVE;
+            payload.ids = ids;
+            let resp = await got.put(this.api + '/action', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: payload
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [ApproveRecords]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async RejectRecords(ids: string[], respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse> {
+        try {
+            if (!respondData) {
+                respondData = new WorkflowRespond();
+            }
+            const payload = respondData.CreatePayload();
+            payload.action = WorkflowActions.REJECT;
+            payload.ids = ids;
+            let resp = await got.put(this.api + '/action', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: payload
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [RejectRecords]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async ReworkRecords(ids: string[], respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse> {
+        try {
+            if (!respondData) {
+                respondData = new WorkflowRespond();
+            }
+            const payload = respondData.CreatePayload();
+            payload.action = WorkflowActions.REWORK;
+            payload.ids = ids;
+            let resp = await got.put(this.api + '/action', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: payload
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [ReworkRecords]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+
+
+    public async ApproveRecordsRequestedBy(user: string, respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse> {
+        try {
+            if (!respondData) {
+                respondData = new WorkflowRespond();
+            }
+            const payload = respondData.CreatePayload();
+            payload.action = WorkflowActions.APPROVE;
+            payload.ids = await this.getPendingRecordIdsOfUser(user);
+            let resp = await got.put(this.api + '/action', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: payload
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [ApproveRecordsRequestedBy]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async RejectRecordsRequestedBy(user: string, respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse> {
+        try {
+            if (!respondData) {
+                respondData = new WorkflowRespond();
+            }
+            const payload = respondData.CreatePayload();
+            payload.action = WorkflowActions.REJECT;
+            payload.ids = await this.getPendingRecordIdsOfUser(user);
+            let resp = await got.put(this.api + '/action', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: payload
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [RejectRecordsRequestedBy]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async ReworkRecordsRequestedBy(user: string, respondData: WorkflowRespond): Promise<SuccessResponse | ErrorResponse> {
+        try {
+            if (!respondData) {
+                respondData = new WorkflowRespond();
+            }
+            const payload = respondData.CreatePayload();
+            payload.action = WorkflowActions.REWORK;
+            payload.ids = await this.getPendingRecordIdsOfUser(user);
+            let resp = await got.put(this.api + '/action', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: payload
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [ReworkRecordsRequestedBy]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+}
+
+
+export class TransactionMethods {
+    app: App;
+    api: string;
+    private dataServiceMap: any;
+    private payload: Array<any>;
+    constructor(app: App, dataServiceMap: any) {
+        this.app = app;
+        this.dataServiceMap = dataServiceMap;
+        this.api = authData.creds.host + '/api/common/txn?app=' + this.app._id;
+        this.payload = [];
+    }
+
+    public CreateOperation(dataService: string, data: DataStackDocument): TransactionMethods {
+        const temp: any = {};
+        temp.operation = 'POST';
+        temp.data = data;
+        temp.dataService = this.dataServiceMap[dataService];
+        this.payload.push(temp);
+        return this;
+    }
+
+    public UpdateOperation(dataService: string, data: DataStackDocument, upsert?: boolean): TransactionMethods {
+        const temp: any = {};
+        temp.operation = 'PUT';
+        temp.data = data;
+        temp.upsert = upsert || false;
+        temp.dataService = this.dataServiceMap[dataService];
+        this.payload.push(temp);
+        return this;
+    }
+
+    public DeleteOperation(dataService: string, data: DataStackDocument): TransactionMethods {
+        const temp: any = {};
+        temp.operation = 'DELETE';
+        temp.data = data;
+        temp.dataService = this.dataServiceMap[dataService];
+        this.payload.push(temp);
+        return this;
+    }
+
+    public async Execute(): Promise<any | ErrorResponse> {
+        try {
+            let resp = await got.post(this.api, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: this.payload
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [Execute]', err);
+            throw new ErrorResponse(err.response);
+        }
     }
 }
 
