@@ -14,7 +14,7 @@ export function authenticateByCredentials(creds: Credentials): Promise<DataStack
         logger.level = 'info';
     }
     if (creds.logger) {
-        logger = logger;
+        logger = creds.logger;
     }
     authData = new AuthHandler(creds);
     return authData.login();
@@ -26,7 +26,7 @@ export function authenticateByToken(creds: Credentials): Promise<DataStack> {
         logger.level = 'info';
     }
     if (creds.logger) {
-        logger = logger;
+        logger = creds.logger;
     }
     return authData.authenticateByToken();
 }
