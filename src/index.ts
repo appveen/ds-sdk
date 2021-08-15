@@ -224,7 +224,7 @@ export class DataStack {
 
     public async Logout(): Promise<void> {
         try {
-            return authData.logout();
+            return await authData.logout();
         } catch (err: any) {
             logError('[ERROR] [Logout]', err);
             throw new ErrorResponse(err.response);
