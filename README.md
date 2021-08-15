@@ -446,16 +446,6 @@ Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the
 
 Type: `object` The data the should to be created.
 
-#### **CascadeRecord(data: object)**
-
-This method creates the related Data Service's document if provided in the data object.
-
-Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
-
-##### **_data_**
-
-Type: `object` The data the should to be created.
-
 #### **DeleteRecord(id: string)**
 
 Returns a Promise giving a message:`string` if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
