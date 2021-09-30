@@ -108,7 +108,7 @@ class AuthHandler {
 
     async authenticateByToken(): Promise<DataStack> {
         try {
-            const resp = await got.get(this.api + '/check', { responseType: 'json' });
+            const resp = await got.get(this.api + '/check', { responseType: 'json', headers: { authorization: this.creds.token } });
             const data = resp.body;
             this.patchData(data);
             if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {

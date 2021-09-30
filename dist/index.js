@@ -110,7 +110,7 @@ class AuthHandler {
     authenticateByToken() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const resp = yield got_1.default.get(this.api + '/check', { responseType: 'json' });
+                const resp = yield got_1.default.get(this.api + '/check', { responseType: 'json', headers: { authorization: this.creds.token } });
                 const data = resp.body;
                 this.patchData(data);
                 if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
