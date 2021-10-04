@@ -1,4 +1,4 @@
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, FileUploadResponse } from './types';
 export declare function authenticateByCredentials(creds: Credentials): Promise<DataStack>;
 export declare function authenticateByToken(creds: Credentials): Promise<DataStack>;
 export declare class DataStack {
@@ -57,7 +57,6 @@ export declare class DSDataService {
     getSchema(): DSDataServiceSchema;
     setSchema(data: DSDataServiceSchema): Promise<DSDataService>;
     DataAPIs(): DataMethods;
-    WorkflowAPIs(): WorkflowMethods;
     private createPayload;
     private cleanPayload;
 }
@@ -105,6 +104,7 @@ export declare class DataMethods {
     data: DataService;
     api: string;
     constructor(app: App, data: DataService);
+    NewDocument(data?: any): DataStackDocument;
     CountRecords(filter?: any): Promise<number>;
     ListRecords(options: ListOptions): Promise<DataStackDocument[]>;
     GetRecord(id: string): Promise<DataStackDocument>;
@@ -114,6 +114,8 @@ export declare class DataMethods {
     DeleteRecord(id: string): Promise<ErrorResponse>;
     PrepareMath(): MathAPI;
     ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;
+    UploadFileFromPath(filePath: string): Promise<FileUploadResponse>;
+    UploadFileAsStream(data: any): Promise<FileUploadResponse>;
 }
 export declare class MathAPI {
     private selectedField;

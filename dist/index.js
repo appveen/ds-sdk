@@ -14,9 +14,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TransactionMethods = exports.WorkflowMethods = exports.MathAPI = exports.DataMethods = exports.DSDataServiceSchema = exports.DSDataServiceIntegration = exports.DSDataServiceRole = exports.DSDataService = exports.DSApp = exports.DataStack = exports.authenticateByToken = exports.authenticateByCredentials = void 0;
 const got_1 = __importDefault(require("got"));
+const form_data_1 = __importDefault(require("form-data"));
+'form-data';
 const lodash_1 = require("lodash");
 const rxjs_1 = require("rxjs");
 const log4js_1 = require("log4js");
+const fs_1 = require("fs");
 const types_1 = require("./types");
 const version_1 = require("./version");
 var authData;
@@ -889,9 +892,9 @@ class DSDataService {
     DataAPIs() {
         return new DataMethods(this.app, this.data);
     }
-    WorkflowAPIs() {
-        return new WorkflowMethods(this.app, this.data);
-    }
+    // public WorkflowAPIs() {
+    //     return new WorkflowMethods(this.app, this.data);
+    // }
     createPayload() {
         const data = JSON.parse(JSON.stringify(this.data));
         this.cleanPayload(data.definition);
@@ -1154,6 +1157,9 @@ class DataMethods {
         this.data = data;
         this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api;
     }
+    NewDocument(data) {
+        return new types_1.DataStackDocument(data);
+    }
     CountRecords(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -1328,6 +1334,63 @@ class DataMethods {
             }
             catch (err) {
                 logError('[ERROR] [ApplyMath]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    UploadFileFromPath(filePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const form = new form_data_1.default();
+                form.append('file', fs_1.createReadStream(filePath));
+                let resp = yield got_1.default.put(this.api + '/utils/file/upload', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token,
+                    },
+                    body: form,
+                    responseType: 'json'
+                });
+                return new types_1.FileUploadResponse(resp.body);
+            }
+            catch (err) {
+                logError('[ERROR] [UploadFileFromPath]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    // public async UploadFileAsDataURL(dataString: string) {
+    //     try {
+    //         const form = new FormData();
+    //         form.append('file', createReadStream(filePath));
+    //         let resp = await got.put(this.api + '/utils/file/upload', {
+    //             headers: {
+    //                 Authorization: 'JWT ' + authData.token,
+    //             },
+    //             body: form,
+    //             responseType: 'json'
+    //         }) as any;
+    //         return new FileUploadResponse(resp.body);
+    //     } catch (err: any) {
+    //         logError('[ERROR] [UploadFileAsDataURL]', err);
+    //         throw new ErrorResponse(err.response);
+    //     }
+    // }
+    UploadFileAsStream(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const form = new form_data_1.default();
+                form.append('file', data);
+                let resp = yield got_1.default.put(this.api + '/utils/file/upload', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token,
+                    },
+                    body: form,
+                    responseType: 'json'
+                });
+                return new types_1.FileUploadResponse(resp.body);
+            }
+            catch (err) {
+                logError('[ERROR] [UploadFileAsStream]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });

@@ -1,4 +1,4 @@
-import { camelCase, startCase } from 'lodash';
+import { camelCase, startCase, set, get } from 'lodash';
 import { readFileSync } from 'fs';
 import { Logger } from 'log4js';
 
@@ -379,14 +379,39 @@ export class SuccessResponse {
 }
 
 
+export class FileUploadResponse {
+    _id: string | undefined;
+    length: number | undefined;
+    chunkSize: number | undefined;
+    uploadDate: string | undefined;
+    filename: string | undefined;
+    md5: string | undefined;
+    contentType: string | undefined;
+    metadata: {
+        filename: string | undefined;
+    } | undefined;
+    constructor(data: any) {
+        Object.assign(this, data);
+    }
+}
+
 export class DataStackDocument {
     _id: number | undefined;
     _metadata: Metadata | undefined;
-    [key: string]: any;
-    constructor(data: any) {
-        Object.assign(this, data);
-        this._id = data?._id;
-        this._metadata = new Metadata(data?._metadata);
+    [key: string]: FileUploadResponse | any;
+    constructor(data?: any) {
+        if (data) {
+            Object.assign(this, data);
+            this._id = data?._id;
+            this._metadata = new Metadata(data?._metadata);
+        }
+    }
+
+    setValue(path: string, value: any) {
+        set(this, path, value);
+    }
+    getValue(path: string) {
+        return get(this, path);
     }
 }
 

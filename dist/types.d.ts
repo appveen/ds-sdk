@@ -176,11 +176,26 @@ export declare class SuccessResponse {
     [key: string]: any;
     constructor(data: SuccessResponse | any);
 }
+export declare class FileUploadResponse {
+    _id: string | undefined;
+    length: number | undefined;
+    chunkSize: number | undefined;
+    uploadDate: string | undefined;
+    filename: string | undefined;
+    md5: string | undefined;
+    contentType: string | undefined;
+    metadata: {
+        filename: string | undefined;
+    } | undefined;
+    constructor(data: any);
+}
 export declare class DataStackDocument {
     _id: number | undefined;
     _metadata: Metadata | undefined;
-    [key: string]: any;
-    constructor(data: any);
+    [key: string]: FileUploadResponse | any;
+    constructor(data?: any);
+    setValue(path: string, value: any): void;
+    getValue(path: string): this[string];
 }
 export declare class Metadata {
     deleted: boolean;

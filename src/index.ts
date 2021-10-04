@@ -1,8 +1,10 @@
 import got from 'got';
+import FormData from 'form-data'; 'form-data';
 import { assignIn } from 'lodash';
 import { interval } from 'rxjs';
 import { getLogger } from 'log4js';
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, WorkflowActions } from './types';
+import { createReadStream } from 'fs';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, WorkflowActions, FileUploadResponse } from './types';
 import { LIB_VERSION } from './version';
 
 var authData: AuthHandler;
@@ -848,9 +850,9 @@ export class DSDataService {
         return new DataMethods(this.app, this.data);
     }
 
-    public WorkflowAPIs() {
-        return new WorkflowMethods(this.app, this.data);
-    }
+    // public WorkflowAPIs() {
+    //     return new WorkflowMethods(this.app, this.data);
+    // }
 
     private createPayload() {
         const data = JSON.parse(JSON.stringify(this.data));
@@ -1131,6 +1133,10 @@ export class DataMethods {
         this.api = authData.creds.host + '/api/c/' + this.app._id + this.data.api;
     }
 
+    public NewDocument(data?: any) {
+        return new DataStackDocument(data);
+    }
+
     public async CountRecords(filter?: any): Promise<number> {
         try {
             const searchParams = new URLSearchParams();
@@ -1289,6 +1295,58 @@ export class DataMethods {
             return new DataStackDocument(resp.body);
         } catch (err: any) {
             logError('[ERROR] [ApplyMath]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async UploadFileFromPath(filePath: string) {
+        try {
+            const form = new FormData();
+            form.append('file', createReadStream(filePath));
+            let resp = await got.put(this.api + '/utils/file/upload', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token,
+                },
+                body: form,
+                responseType: 'json'
+            }) as any;
+            return new FileUploadResponse(resp.body);
+        } catch (err: any) {
+            logError('[ERROR] [UploadFileFromPath]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+    // public async UploadFileAsDataURL(dataString: string) {
+    //     try {
+    //         const form = new FormData();
+    //         form.append('file', createReadStream(filePath));
+    //         let resp = await got.put(this.api + '/utils/file/upload', {
+    //             headers: {
+    //                 Authorization: 'JWT ' + authData.token,
+    //             },
+    //             body: form,
+    //             responseType: 'json'
+    //         }) as any;
+    //         return new FileUploadResponse(resp.body);
+    //     } catch (err: any) {
+    //         logError('[ERROR] [UploadFileAsDataURL]', err);
+    //         throw new ErrorResponse(err.response);
+    //     }
+    // }
+    public async UploadFileAsStream(data: any) {
+        try {
+            const form = new FormData();
+            form.append('file', data);
+            let resp = await got.put(this.api + '/utils/file/upload', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token,
+                },
+                body: form,
+                responseType: 'json'
+            }) as any;
+            return new FileUploadResponse(resp.body);
+        } catch (err: any) {
+            logError('[ERROR] [UploadFileAsStream]', err);
             throw new ErrorResponse(err.response);
         }
     }

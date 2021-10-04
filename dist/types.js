@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkflowRespond = exports.WorkflowActions = exports.SchemaFieldProperties = exports.SchemaFieldTypes = exports.SchemaField = exports.WebHook = exports.Metadata = exports.DataStackDocument = exports.SuccessResponse = exports.ErrorResponse = exports.RoleMethods = exports.RoleBlock = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
+exports.WorkflowRespond = exports.WorkflowActions = exports.SchemaFieldProperties = exports.SchemaFieldTypes = exports.SchemaField = exports.WebHook = exports.Metadata = exports.DataStackDocument = exports.FileUploadResponse = exports.SuccessResponse = exports.ErrorResponse = exports.RoleMethods = exports.RoleBlock = exports.DataService = exports.ListOptions = exports.Credentials = exports.BasicDetails = exports.AccessControl = exports.Auth = exports.UserDetails = exports.Logo = exports.AppCenterStyle = exports.App = void 0;
 const lodash_1 = require("lodash");
 const fs_1 = require("fs");
 class App {
@@ -250,11 +250,25 @@ class SuccessResponse {
     }
 }
 exports.SuccessResponse = SuccessResponse;
-class DataStackDocument {
+class FileUploadResponse {
     constructor(data) {
         Object.assign(this, data);
-        this._id = data === null || data === void 0 ? void 0 : data._id;
-        this._metadata = new Metadata(data === null || data === void 0 ? void 0 : data._metadata);
+    }
+}
+exports.FileUploadResponse = FileUploadResponse;
+class DataStackDocument {
+    constructor(data) {
+        if (data) {
+            Object.assign(this, data);
+            this._id = data === null || data === void 0 ? void 0 : data._id;
+            this._metadata = new Metadata(data === null || data === void 0 ? void 0 : data._metadata);
+        }
+    }
+    setValue(path, value) {
+        lodash_1.set(this, path, value);
+    }
+    getValue(path) {
+        return lodash_1.get(this, path);
     }
 }
 exports.DataStackDocument = DataStackDocument;
