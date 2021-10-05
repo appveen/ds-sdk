@@ -1,3 +1,4 @@
+const path = require('path');
 require('dotenv').config();
 const SDK = require('./dist/index');
 
@@ -8,14 +9,17 @@ const TOKEN = process.env.DATA_STACK_TOKEN;
 
 (async function () {
   try {
-    let dataStack = await SDK.authenticateByToken({
+    let dataStack = await SDK.authenticateByCredentials({
       host: HOST,
-      // username: USERNAME,
-      // password: PASSWORD,
-      token: TOKEN
+      username: USERNAME,
+      password: PASSWORD,
+      // token: TOKEN
     });
     console.log('Valid Token');
-    let app = await dataStack.App('Jugnu');
+    const app = await dataStack.App('Jugnu');
+    const dataService = await app.DataService('upload-test');
+    const file = await dataService.DataAPIs().UploadFileFromPath(path.join(__dirname,'test.txt'));
+    console.log(file);
     // const status = await app.StartAllDataServices();
     // let dataService = await app.DataService('Employee');
     // const math = dataService.DataAPIs().PrepareMath();

@@ -1343,7 +1343,7 @@ class DataMethods {
             try {
                 const form = new form_data_1.default();
                 form.append('file', fs_1.createReadStream(filePath));
-                let resp = yield got_1.default.put(this.api + '/utils/file/upload', {
+                let resp = yield got_1.default.post(this.api + '/utils/file/upload', {
                     headers: {
                         Authorization: 'JWT ' + authData.token,
                     },
@@ -1362,7 +1362,7 @@ class DataMethods {
     //     try {
     //         const form = new FormData();
     //         form.append('file', createReadStream(filePath));
-    //         let resp = await got.put(this.api + '/utils/file/upload', {
+    //         let resp = await got.post(this.api + '/utils/file/upload', {
     //             headers: {
     //                 Authorization: 'JWT ' + authData.token,
     //             },
@@ -1380,7 +1380,7 @@ class DataMethods {
             try {
                 const form = new form_data_1.default();
                 form.append('file', data);
-                let resp = yield got_1.default.put(this.api + '/utils/file/upload', {
+                let resp = yield got_1.default.post(this.api + '/utils/file/upload', {
                     headers: {
                         Authorization: 'JWT ' + authData.token,
                     },

@@ -390,6 +390,10 @@ After making changes to the returned object by [getSchema()](<#getSchema()>) met
 
 This Object contains methods to manage data of a Data Service.
 
+
+#### **NewDocument(data?: any): DataStackDocument**
+Returns a [DataStackDocument object](#DataStackDocument) Wrapper Object with useful methods.
+
 #### **CountRecords(filter: object)**
 
 Returns a Promise giving a `number` if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
@@ -469,6 +473,23 @@ Type: `string` The ID of the record.
 ##### **_math_**
 
 Type: `MathAPI` The Math Object that has the operations.
+
+
+#### **UploadFileFromPath(filePath: string): Promise<[FileUploadResponse](#FileUploadResponse)>**
+
+Returns a Promise giving a [FileUploadResponse object](#FileUploadResponse) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### **_filePath_**
+
+Type: `string` The file path to upload.
+
+#### **UploadFileAsStream(data: any): Promise<[FileUploadResponse](#FileUploadResponse)>**
+
+Returns a Promise giving a [FileUploadResponse object](#FileUploadResponse) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
+
+##### **_data_**
+
+Type: `stream` The file readable stream.
 
 <hr>
 
@@ -759,6 +780,32 @@ A URL of the Web-Hook.
 Type: `string`
 
 Optional error message to show, when the hook URL is down.
+
+<hr>
+
+### **FileUploadResponse**
+
+The object is return when a file is uploaded.
+
+#### _id
+Type: `string`
+#### length
+Type: `number`
+#### chunkSize
+Type: `number`
+#### uploadDate
+Type: `string`
+#### filename
+Type: `string`
+#### md5
+Type: `string`
+#### contentType
+Type: `string`
+#### metadata
+Type: `object`
+
+##### filename
+Type: `string`
 
 <hr>
 
