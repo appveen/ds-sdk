@@ -1210,9 +1210,22 @@ export class DataMethods {
         }
     }
 
-    public async UpdateRecord(id: string, data: any): Promise<DataStackDocument> {
+    public async UpdateRecord(id: string, data: any, options?: { expireAt: string | number, expireAfter: string }): Promise<DataStackDocument> {
         try {
-            let resp = await got.put(this.api + '/' + id, {
+            let url = this.api + '/' + id;
+            const params = [];
+            if (options) {
+                if (options.expireAfter !== null || options.expireAfter !== undefined) {
+                    params.push(`expireAfter=${options.expireAfter}`);
+                }
+                if (options.expireAt !== null || options.expireAt !== undefined) {
+                    params.push(`expireAt=${options.expireAt}`);
+                }
+            }
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            let resp = await got.put(url, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -1226,9 +1239,22 @@ export class DataMethods {
         }
     }
 
-    public async UpsertRecord(id: string, data: any): Promise<DataStackDocument> {
+    public async UpsertRecord(id: string, data: any, options?: { expireAt: string | number, expireAfter: string }): Promise<DataStackDocument> {
         try {
-            let resp = await got.put(this.api + '/' + id + '?upsert=true', {
+            let url = this.api + '/' + id;
+            const params = ['upsert=true'];
+            if (options) {
+                if (options.expireAfter !== null || options.expireAfter !== undefined) {
+                    params.push(`expireAfter=${options.expireAfter}`);
+                }
+                if (options.expireAt !== null || options.expireAt !== undefined) {
+                    params.push(`expireAt=${options.expireAt}`);
+                }
+            }
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            let resp = await got.put(url, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -1242,9 +1268,22 @@ export class DataMethods {
         }
     }
 
-    public async CreateRecord(data: any): Promise<DataStackDocument> {
+    public async CreateRecord(data: any, options?: { expireAt: string | number, expireAfter: string }): Promise<DataStackDocument> {
         try {
-            let resp = await got.post(this.api, {
+            let url = this.api;
+            const params = [];
+            if (options) {
+                if (options.expireAfter !== null || options.expireAfter !== undefined) {
+                    params.push(`expireAfter=${options.expireAfter}`);
+                }
+                if (options.expireAt !== null || options.expireAt !== undefined) {
+                    params.push(`expireAt=${options.expireAt}`);
+                }
+            }
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            let resp = await got.post(url, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },

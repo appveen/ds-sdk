@@ -418,7 +418,7 @@ Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the
 
 Type: `string` The ID of the record.
 
-#### **UpdateRecord(id: string, data: object)**
+#### **UpdateRecord(id: string, data: object, options: APIOptions)**
 
 Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
 
@@ -430,7 +430,11 @@ Type: `string` The ID of the record.
 
 Type: `object` The data the should to be updated.
 
-#### **UpsertRecord(id: string, data: object)**
+##### **_options_**
+
+Type: `APIOptions` Options like expireAt &amp; expireAfter.
+
+#### **UpsertRecord(id: string, data: object, options: APIOptions)**
 
 Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
 
@@ -442,13 +446,21 @@ Type: `string` The ID of the record.
 
 Type: `object` The data the should to be updated.
 
-#### **CreateRecord(data: object)**
+##### **_options_**
+
+Type: `APIOptions` Options like expireAt &amp; expireAfter.
+
+#### **CreateRecord(data: object, options: APIOptions)**
 
 Returns a Promise giving a [DataStackDocument object](#DataStackDocument) if the operation is success, else will throw an [ErrorResponse object](#ErrorResponse).
 
 ##### **_data_**
 
 Type: `object` The data the should to be created.
+
+##### **_options_**
+
+Type: `APIOptions` Options like expireAt &amp; expireAfter.
 
 #### **DeleteRecord(id: string)**
 

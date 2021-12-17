@@ -1239,10 +1239,23 @@ class DataMethods {
             }
         });
     }
-    UpdateRecord(id, data) {
+    UpdateRecord(id, data, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/' + id, {
+                let url = this.api + '/' + id;
+                const params = [];
+                if (options) {
+                    if (options.expireAfter !== null || options.expireAfter !== undefined) {
+                        params.push(`expireAfter=${options.expireAfter}`);
+                    }
+                    if (options.expireAt !== null || options.expireAt !== undefined) {
+                        params.push(`expireAt=${options.expireAt}`);
+                    }
+                }
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                let resp = yield got_1.default.put(url, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -1257,10 +1270,23 @@ class DataMethods {
             }
         });
     }
-    UpsertRecord(id, data) {
+    UpsertRecord(id, data, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/' + id + '?upsert=true', {
+                let url = this.api + '/' + id;
+                const params = ['upsert=true'];
+                if (options) {
+                    if (options.expireAfter !== null || options.expireAfter !== undefined) {
+                        params.push(`expireAfter=${options.expireAfter}`);
+                    }
+                    if (options.expireAt !== null || options.expireAt !== undefined) {
+                        params.push(`expireAt=${options.expireAt}`);
+                    }
+                }
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                let resp = yield got_1.default.put(url, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -1275,10 +1301,23 @@ class DataMethods {
             }
         });
     }
-    CreateRecord(data) {
+    CreateRecord(data, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.post(this.api, {
+                let url = this.api;
+                const params = [];
+                if (options) {
+                    if (options.expireAfter !== null || options.expireAfter !== undefined) {
+                        params.push(`expireAfter=${options.expireAfter}`);
+                    }
+                    if (options.expireAt !== null || options.expireAt !== undefined) {
+                        params.push(`expireAt=${options.expireAt}`);
+                    }
+                }
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                let resp = yield got_1.default.post(url, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },

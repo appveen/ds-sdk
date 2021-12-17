@@ -108,9 +108,18 @@ export declare class DataMethods {
     CountRecords(filter?: any): Promise<number>;
     ListRecords(options: ListOptions): Promise<DataStackDocument[]>;
     GetRecord(id: string): Promise<DataStackDocument>;
-    UpdateRecord(id: string, data: any): Promise<DataStackDocument>;
-    UpsertRecord(id: string, data: any): Promise<DataStackDocument>;
-    CreateRecord(data: any): Promise<DataStackDocument>;
+    UpdateRecord(id: string, data: any, options?: {
+        expireAt: string | number;
+        expireAfter: string;
+    }): Promise<DataStackDocument>;
+    UpsertRecord(id: string, data: any, options?: {
+        expireAt: string | number;
+        expireAfter: string;
+    }): Promise<DataStackDocument>;
+    CreateRecord(data: any, options?: {
+        expireAt: string | number;
+        expireAfter: string;
+    }): Promise<DataStackDocument>;
     DeleteRecord(id: string): Promise<ErrorResponse>;
     PrepareMath(): MathAPI;
     ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;
