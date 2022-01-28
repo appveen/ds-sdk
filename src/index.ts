@@ -409,38 +409,41 @@ export class DSApp {
         }
     }
 
-    public async ListDataServices(): Promise<DSDataService[]> {
-        try {
-            const filter = { app: this.app._id };
-            const searchParams = new URLSearchParams();
-            searchParams.append('app', this.app._id + '');
-            searchParams.append('filter', JSON.stringify(filter));
-            searchParams.append('count', '-1');
-            let resp = await got.get(this.api, {
-                searchParams: searchParams,
-                headers: {
-                    Authorization: 'JWT ' + authData.token
-                },
-                responseType: 'json'
-            }) as any;
-            return resp.body.map((item: any) => {
-                new DSDataService(this.app, item);
-            });
-        } catch (err: any) {
-            logError('[ERROR] [ListDataServices]', err);
-            throw new ErrorResponse(err.response);
-        }
-    }
+    // public async ListDataServices(): Promise<DSDataService[]> {
+    //     try {
+    //         const filter = { app: this.app._id };
+    //         const searchParams = new URLSearchParams();
+    //         searchParams.append('app', this.app._id + '');
+    //         searchParams.append('filter', JSON.stringify(filter));
+    //         searchParams.append('count', '-1');
+    //         let resp = await got.get(this.api, {
+    //             searchParams: searchParams,
+    //             headers: {
+    //                 Authorization: 'JWT ' + authData.token
+    //             },
+    //             responseType: 'json'
+    //         }) as any;
+    //         return resp.body.map((item: any) => {
+    //             return new DSDataService(this.app, item);
+    //         });
+    //     } catch (err: any) {
+    //         logError('[ERROR] [ListDataServices]', err);
+    //         throw new ErrorResponse(err.response);
+    //     }
+    // }
 
-    public async SearchDataServices(options: ListOptions): Promise<DSDataService[]> {
+    public async ListDataServices(options: ListOptions): Promise<DSDataService[]> {
         try {
             const searchParams = new URLSearchParams();
             searchParams.append('app', this.app._id + '');
             if (!options) {
                 options = new ListOptions();
             }
+            if (!options.filter) {
+                options.filter = {};
+            }
+            options.filter.app = this.app._id;
             if (options.filter) {
-                options.filter.app = this.app._id;
                 searchParams.append('filter', JSON.stringify(options.filter));
             }
             if (options.sort) {
@@ -465,7 +468,7 @@ export class DSApp {
                 responseType: 'json'
             }) as any;
             return resp.body.map((item: any) => {
-                new DSDataService(this.app, item);
+                return new DSDataService(this.app, item);
             });
         } catch (err: any) {
             logError('[ERROR] [ListDataServices]', err);

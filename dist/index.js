@@ -423,32 +423,29 @@ class DSApp {
             }
         });
     }
-    ListDataServices() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const filter = { app: this.app._id };
-                const searchParams = new URLSearchParams();
-                searchParams.append('app', this.app._id + '');
-                searchParams.append('filter', JSON.stringify(filter));
-                searchParams.append('count', '-1');
-                let resp = yield got_1.default.get(this.api, {
-                    searchParams: searchParams,
-                    headers: {
-                        Authorization: 'JWT ' + authData.token
-                    },
-                    responseType: 'json'
-                });
-                return resp.body.map((item) => {
-                    new DSDataService(this.app, item);
-                });
-            }
-            catch (err) {
-                logError('[ERROR] [ListDataServices]', err);
-                throw new types_1.ErrorResponse(err.response);
-            }
-        });
-    }
-    SearchDataServices(options) {
+    // public async ListDataServices(): Promise<DSDataService[]> {
+    //     try {
+    //         const filter = { app: this.app._id };
+    //         const searchParams = new URLSearchParams();
+    //         searchParams.append('app', this.app._id + '');
+    //         searchParams.append('filter', JSON.stringify(filter));
+    //         searchParams.append('count', '-1');
+    //         let resp = await got.get(this.api, {
+    //             searchParams: searchParams,
+    //             headers: {
+    //                 Authorization: 'JWT ' + authData.token
+    //             },
+    //             responseType: 'json'
+    //         }) as any;
+    //         return resp.body.map((item: any) => {
+    //             return new DSDataService(this.app, item);
+    //         });
+    //     } catch (err: any) {
+    //         logError('[ERROR] [ListDataServices]', err);
+    //         throw new ErrorResponse(err.response);
+    //     }
+    // }
+    ListDataServices(options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const searchParams = new URLSearchParams();
@@ -456,8 +453,11 @@ class DSApp {
                 if (!options) {
                     options = new types_1.ListOptions();
                 }
+                if (!options.filter) {
+                    options.filter = {};
+                }
+                options.filter.app = this.app._id;
                 if (options.filter) {
-                    options.filter.app = this.app._id;
                     searchParams.append('filter', JSON.stringify(options.filter));
                 }
                 if (options.sort) {
@@ -483,7 +483,7 @@ class DSApp {
                     responseType: 'json'
                 });
                 return resp.body.map((item) => {
-                    new DSDataService(this.app, item);
+                    return new DSDataService(this.app, item);
                 });
             }
             catch (err) {

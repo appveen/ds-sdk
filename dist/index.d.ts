@@ -20,8 +20,7 @@ export declare class DSApp {
     RepairAllDataServices(): Promise<SuccessResponse[]>;
     StartAllDataServices(): Promise<DSApp>;
     StopAllDataServices(): Promise<DSApp>;
-    ListDataServices(): Promise<DSDataService[]>;
-    SearchDataServices(options: ListOptions): Promise<DSDataService[]>;
+    ListDataServices(options: ListOptions): Promise<DSDataService[]>;
     DataService(name: string): Promise<DSDataService>;
     CreateDataService(name: string, description?: string): Promise<DSDataService>;
     TransactionAPI(): TransactionMethods;
