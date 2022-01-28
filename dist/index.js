@@ -347,10 +347,13 @@ class DSApp {
             });
         });
     }
-    RepairAllDataServices() {
+    RepairAllDataServices(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filter = { app: this.app._id };
+                if (!filter) {
+                    filter = {};
+                }
+                filter.app = this.app._id;
                 let searchParams = new URLSearchParams();
                 searchParams.append('filter', JSON.stringify(filter));
                 searchParams.append('count', '-1');
@@ -387,17 +390,50 @@ class DSApp {
             }
         });
     }
-    StartAllDataServices() {
+    StartAllDataServices(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.managementAPIs.serviceStart + '?app=' + this.app._id, {
+                // let resp = await got.put(this.managementAPIs.serviceStart + '?app=' + this.app._id, {
+                //     headers: {
+                //         Authorization: 'JWT ' + authData.token
+                //     },
+                //     responseType: 'json',
+                //     json: {},
+                // }) as any;
+                // return this;
+                if (!filter) {
+                    filter = {};
+                }
+                filter.app = this.app._id;
+                let searchParams = new URLSearchParams();
+                searchParams.append('filter', JSON.stringify(filter));
+                searchParams.append('count', '-1');
+                searchParams.append('app', this.app._id + '');
+                const resp = yield got_1.default.get(authData.creds.host + '/api/a/sm/service', {
+                    searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
-                    responseType: 'json',
-                    json: {},
+                    responseType: 'json'
                 });
-                return this;
+                if (resp.body && resp.body.length > 0) {
+                    let promises = resp.body.map((e) => __awaiter(this, void 0, void 0, function* () {
+                        logger.info('Repairing Data Service', e._id);
+                        let resp = yield got_1.default.put(authData.creds.host + `/api/a/sm/${e._id}/start` + '?app=' + this.app._id, {
+                            headers: {
+                                Authorization: 'JWT ' + authData.token
+                            },
+                            responseType: 'json',
+                            json: {}
+                        });
+                        return new types_1.SuccessResponse(resp.body);
+                    }));
+                    promises = yield Promise.all(promises);
+                    return promises;
+                }
+                else {
+                    return [];
+                }
             }
             catch (err) {
                 logError('[ERROR] [StartAllDataServices]', err);
@@ -405,17 +441,50 @@ class DSApp {
             }
         });
     }
-    StopAllDataServices() {
+    StopAllDataServices(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.managementAPIs.serviceStop + '?app=' + this.app._id, {
+                // let resp = await got.put(this.managementAPIs.serviceStop + '?app=' + this.app._id, {
+                //     headers: {
+                //         Authorization: 'JWT ' + authData.token
+                //     },
+                //     responseType: 'json',
+                //     json: {},
+                // }) as any;
+                // return this;
+                if (!filter) {
+                    filter = {};
+                }
+                filter.app = this.app._id;
+                let searchParams = new URLSearchParams();
+                searchParams.append('filter', JSON.stringify(filter));
+                searchParams.append('count', '-1');
+                searchParams.append('app', this.app._id + '');
+                const resp = yield got_1.default.get(authData.creds.host + '/api/a/sm/service', {
+                    searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
-                    responseType: 'json',
-                    json: {},
+                    responseType: 'json'
                 });
-                return this;
+                if (resp.body && resp.body.length > 0) {
+                    let promises = resp.body.map((e) => __awaiter(this, void 0, void 0, function* () {
+                        logger.info('Repairing Data Service', e._id);
+                        let resp = yield got_1.default.put(authData.creds.host + `/api/a/sm/${e._id}/stop` + '?app=' + this.app._id, {
+                            headers: {
+                                Authorization: 'JWT ' + authData.token
+                            },
+                            responseType: 'json',
+                            json: {}
+                        });
+                        return new types_1.SuccessResponse(resp.body);
+                    }));
+                    promises = yield Promise.all(promises);
+                    return promises;
+                }
+                else {
+                    return [];
+                }
             }
             catch (err) {
                 logError('[ERROR] [StopAllDataServices]', err);

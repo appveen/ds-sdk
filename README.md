@@ -510,7 +510,17 @@ The name/id of the Data Service to be Created.
 Returns an [TransactionMethods object](#TransactionMethods) to do Transaction.
   
 
-#### **StartAllDataServices()**
+#### **StartAllDataServices(filter)**
+
+##### **_filter_**
+
+  
+
+Type: `object`
+
+  
+
+Filter to select fewer DS.
 
   
 
@@ -522,7 +532,17 @@ This will start all the Data Service in the app, if not already stopped.
 
   
 
-#### **StopAllDataServices()**
+#### **StopAllDataServices(filter)**
+
+##### **_filter_**
+
+  
+
+Type: `object`
+
+  
+
+Filter to select fewer DS.
 
   
 

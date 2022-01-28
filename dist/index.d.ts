@@ -17,9 +17,9 @@ export declare class DSApp {
     private dataServiceMap;
     constructor(app: App);
     private CreateDataServiceMap;
-    RepairAllDataServices(): Promise<SuccessResponse[]>;
-    StartAllDataServices(): Promise<DSApp>;
-    StopAllDataServices(): Promise<DSApp>;
+    RepairAllDataServices(filter: any): Promise<SuccessResponse[]>;
+    StartAllDataServices(filter: any): Promise<SuccessResponse[]>;
+    StopAllDataServices(filter: any): Promise<SuccessResponse[]>;
     ListDataServices(options: ListOptions): Promise<DSDataService[]>;
     DataService(name: string): Promise<DSDataService>;
     CreateDataService(name: string, description?: string): Promise<DSDataService>;

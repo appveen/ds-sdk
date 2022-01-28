@@ -340,9 +340,12 @@ export class DSApp {
         });
     }
 
-    public async RepairAllDataServices(): Promise<SuccessResponse[]> {
+    public async RepairAllDataServices(filter: any): Promise<SuccessResponse[]> {
         try {
-            const filter = { app: this.app._id };
+            if (!filter) {
+                filter = {};
+            }
+            filter.app = this.app._id
             let searchParams = new URLSearchParams();
             searchParams.append('filter', JSON.stringify(filter));
             searchParams.append('count', '-1');
@@ -377,32 +380,96 @@ export class DSApp {
         }
     }
 
-    public async StartAllDataServices(): Promise<DSApp> {
+    public async StartAllDataServices(filter: any): Promise<SuccessResponse[]> {
         try {
-            let resp = await got.put(this.managementAPIs.serviceStart + '?app=' + this.app._id, {
+            // let resp = await got.put(this.managementAPIs.serviceStart + '?app=' + this.app._id, {
+            //     headers: {
+            //         Authorization: 'JWT ' + authData.token
+            //     },
+            //     responseType: 'json',
+            //     json: {},
+            // }) as any;
+            // return this;
+            if (!filter) {
+                filter = {};
+            }
+            filter.app = this.app._id
+            let searchParams = new URLSearchParams();
+            searchParams.append('filter', JSON.stringify(filter));
+            searchParams.append('count', '-1');
+            searchParams.append('app', this.app._id + '');
+            const resp = await got.get(authData.creds.host + '/api/a/sm/service', {
+                searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
-                responseType: 'json',
-                json: {},
+                responseType: 'json'
             }) as any;
-            return this;
+            if (resp.body && resp.body.length > 0) {
+                let promises = resp.body.map(async (e: any) => {
+                    logger.info('Repairing Data Service', e._id);
+                    let resp = await got.put(authData.creds.host + `/api/a/sm/${e._id}/start` + '?app=' + this.app._id, {
+                        headers: {
+                            Authorization: 'JWT ' + authData.token
+                        },
+                        responseType: 'json',
+                        json: {}
+                    }) as any;
+                    return new SuccessResponse(resp.body);
+                });
+                promises = await Promise.all(promises);
+                return promises;
+            } else {
+                return [];
+            }
         } catch (err: any) {
             logError('[ERROR] [StartAllDataServices]', err);
             throw new ErrorResponse(err.response);
         }
     }
 
-    public async StopAllDataServices(): Promise<DSApp> {
+    public async StopAllDataServices(filter: any): Promise<SuccessResponse[]> {
         try {
-            let resp = await got.put(this.managementAPIs.serviceStop + '?app=' + this.app._id, {
+            // let resp = await got.put(this.managementAPIs.serviceStop + '?app=' + this.app._id, {
+            //     headers: {
+            //         Authorization: 'JWT ' + authData.token
+            //     },
+            //     responseType: 'json',
+            //     json: {},
+            // }) as any;
+            // return this;
+            if (!filter) {
+                filter = {};
+            }
+            filter.app = this.app._id
+            let searchParams = new URLSearchParams();
+            searchParams.append('filter', JSON.stringify(filter));
+            searchParams.append('count', '-1');
+            searchParams.append('app', this.app._id + '');
+            const resp = await got.get(authData.creds.host + '/api/a/sm/service', {
+                searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
-                responseType: 'json',
-                json: {},
+                responseType: 'json'
             }) as any;
-            return this;
+            if (resp.body && resp.body.length > 0) {
+                let promises = resp.body.map(async (e: any) => {
+                    logger.info('Repairing Data Service', e._id);
+                    let resp = await got.put(authData.creds.host + `/api/a/sm/${e._id}/stop` + '?app=' + this.app._id, {
+                        headers: {
+                            Authorization: 'JWT ' + authData.token
+                        },
+                        responseType: 'json',
+                        json: {}
+                    }) as any;
+                    return new SuccessResponse(resp.body);
+                });
+                promises = await Promise.all(promises);
+                return promises;
+            } else {
+                return [];
+            }
         } catch (err: any) {
             logError('[ERROR] [StopAllDataServices]', err);
             throw new ErrorResponse(err.response);
