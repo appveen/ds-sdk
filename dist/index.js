@@ -91,7 +91,7 @@ class AuthHandler {
                     logger.info('Creating Auto Refresh Routine');
                     this.createTokenRefreshRoutine();
                 }
-                return new DataStack();
+                return new DataStack(this);
             }
             catch (err) {
                 throw new types_1.ErrorResponse(err.response);
@@ -122,7 +122,7 @@ class AuthHandler {
                 if (this.rbacUserTokenRefresh) {
                     this.createTokenRefreshRoutine();
                 }
-                return new DataStack();
+                return new DataStack(this);
             }
             catch (err) {
                 throw new types_1.ErrorResponse(err.response);
@@ -222,8 +222,9 @@ class AuthHandler {
     }
 }
 class DataStack {
-    constructor() {
+    constructor(data) {
         this.api = authData.creds.host + '/api/a/rbac/app';
+        this.authData = data;
     }
     Logout() {
         return __awaiter(this, void 0, void 0, function* () {

@@ -1,9 +1,26 @@
 import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, FileUploadResponse } from './types';
+interface AuthData {
+    _id: string | undefined;
+    uuid: string | undefined;
+    token: string | undefined;
+    rToken: string | undefined;
+    expiresIn: number | undefined;
+    rbacBotTokenDuration: number | undefined;
+    rbacHbInterval: number | undefined;
+    rbacUserCloseWindowToLogout: boolean;
+    rbacUserToSingleSession: boolean;
+    rbacUserTokenDuration: number | undefined;
+    rbacUserTokenRefresh: boolean;
+    serverTime: number | undefined;
+    defaultTimezone: string | undefined;
+    bot: boolean;
+}
 export declare function authenticateByCredentials(creds: Credentials): Promise<DataStack>;
 export declare function authenticateByToken(creds: Credentials): Promise<DataStack>;
 export declare class DataStack {
+    authData: AuthData;
     api: string;
-    constructor();
+    constructor(data: AuthData);
     Logout(): Promise<void>;
     ListApps(): Promise<DSApp[]>;
     App(name: string): Promise<DSApp>;

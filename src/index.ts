@@ -11,6 +11,23 @@ var authData: AuthHandler;
 var logger = getLogger(`[@appveen/ds-sdk] [${LIB_VERSION}]`);
 logger.level = 'error';
 
+interface AuthData {
+    _id: string | undefined;
+    uuid: string | undefined;
+    token: string | undefined;
+    rToken: string | undefined;
+    expiresIn: number | undefined;
+    rbacBotTokenDuration: number | undefined;
+    rbacHbInterval: number | undefined;
+    rbacUserCloseWindowToLogout: boolean;
+    rbacUserToSingleSession: boolean;
+    rbacUserTokenDuration: number | undefined;
+    rbacUserTokenRefresh: boolean;
+    serverTime: number | undefined;
+    defaultTimezone: string | undefined;
+    bot: boolean;
+}
+
 export function authenticateByCredentials(creds: Credentials): Promise<DataStack> {
     if (creds.trace) {
         logger.level = 'info';
@@ -46,7 +63,7 @@ function logError(message: string, err: any) {
     }
 }
 
-class AuthHandler {
+class AuthHandler implements AuthData {
 
     creds: Credentials;
 
@@ -92,7 +109,7 @@ class AuthHandler {
                 logger.info('Creating Auto Refresh Routine');
                 this.createTokenRefreshRoutine();
             }
-            return new DataStack();
+            return new DataStack(this);
         } catch (err: any) {
             throw new ErrorResponse(err.response);
         }
@@ -119,7 +136,7 @@ class AuthHandler {
             if (this.rbacUserTokenRefresh) {
                 this.createTokenRefreshRoutine();
             }
-            return new DataStack();
+            return new DataStack(this);
         } catch (err: any) {
             throw new ErrorResponse(err.response);
         }
@@ -219,9 +236,11 @@ class AuthHandler {
 
 export class DataStack {
 
+    authData: AuthData;
     api: string;
-    constructor() {
+    constructor(data: AuthData) {
         this.api = authData.creds.host + '/api/a/rbac/app';
+        this.authData = data;
     }
 
     public async Logout(): Promise<void> {
