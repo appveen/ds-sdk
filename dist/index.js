@@ -72,6 +72,7 @@ class AuthHandler {
         this.creds = new types_1.Credentials(creds);
         this.api = this.creds.host + '/api/a/rbac';
         this.defaultTimezone = 'Zulu';
+        this.isSuperAdmin = false;
     }
     login() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -79,7 +80,7 @@ class AuthHandler {
                 logger.info('Authenticating at:', this.creds.host);
                 logger.info('Using Username:', this.creds.username);
                 const payload = { username: this.creds.username, password: this.creds.password };
-                const resp = yield got_1.default.post(this.api + '/login', { json: payload, responseType: 'json' });
+                const resp = yield got_1.default.post(this.api + '/auth/login', { json: payload, responseType: 'json' });
                 const data = resp.body;
                 this.patchData(data);
                 logger.info('Authentication Successfull');
@@ -101,7 +102,7 @@ class AuthHandler {
     logout() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const resp = yield got_1.default.delete(this.api + '/logout', { responseType: 'json' });
+                const resp = yield got_1.default.delete(this.api + '/auth/logout', { responseType: 'json' });
                 logger.info('Logged out Successfull');
                 this.clearRoutine();
             }
@@ -113,7 +114,7 @@ class AuthHandler {
     authenticateByToken() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const resp = yield got_1.default.get(this.api + '/check', { responseType: 'json', headers: { authorization: this.creds.token } });
+                const resp = yield got_1.default.get(this.api + '/auth/check', { responseType: 'json', headers: { authorization: this.creds.token } });
                 const data = resp.body;
                 this.patchData(data);
                 if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
@@ -137,7 +138,7 @@ class AuthHandler {
                 logger.info('[HB Triggred]');
                 logger.debug(this.token, this.uuid);
                 try {
-                    let resp = yield got_1.default.put(this.api + '/usr/hb', {
+                    let resp = yield got_1.default.put(this.api + '/auth/hb', {
                         headers: {
                             Authorization: 'JWT ' + this.token
                         },
@@ -173,7 +174,7 @@ class AuthHandler {
             logger.info('[Refresh Triggred]');
             logger.debug(this.token, this.rToken);
             try {
-                let resp = yield got_1.default.get(this.api + '/refresh', {
+                let resp = yield got_1.default.get(this.api + '/auth/refresh', {
                     headers: {
                         rToken: 'JWT ' + this.rToken,
                         Authorization: 'JWT ' + this.token
@@ -210,6 +211,7 @@ class AuthHandler {
         this.token = data === null || data === void 0 ? void 0 : data.token;
         this.rToken = data === null || data === void 0 ? void 0 : data.rToken;
         this.expiresIn = data === null || data === void 0 ? void 0 : data.expiresIn;
+        this.isSuperAdmin = (data === null || data === void 0 ? void 0 : data.isSuperAdmin) || false;
         this.rbacBotTokenDuration = (data === null || data === void 0 ? void 0 : data.rbacBotTokenDuration) || 600;
         this.rbacHbInterval = (data === null || data === void 0 ? void 0 : data.rbacHbInterval) || 60;
         this.rbacUserCloseWindowToLogout = (data === null || data === void 0 ? void 0 : data.rbacUserCloseWindowToLogout) || false;
@@ -223,7 +225,7 @@ class AuthHandler {
 }
 class DataStack {
     constructor(data) {
-        this.api = authData.creds.host + '/api/a/rbac/app';
+        this.api = authData.creds.host + '/api/a/rbac';
         this.authData = data;
     }
     Logout() {
@@ -242,7 +244,7 @@ class DataStack {
             try {
                 const searchParams = new URLSearchParams();
                 searchParams.append('count', '-1');
-                let resp = yield got_1.default.get(this.api, {
+                let resp = yield got_1.default.get(this.api + '/data/app', {
                     searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
@@ -262,7 +264,7 @@ class DataStack {
     App(name) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.get(this.api + '/' + name, {
+                let resp = yield got_1.default.get(this.api + '/data/app/' + name, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -279,7 +281,10 @@ class DataStack {
     CreateApp(name) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.post(this.api, {
+                if (!this.authData.isSuperAdmin) {
+                    throw new types_1.ErrorResponse({ statusMessage: 'Only Super Admins Can Create an App' });
+                }
+                let resp = yield got_1.default.post(this.api + '/admin/app', {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -300,7 +305,10 @@ class DataStack {
     DeleteApp(name) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.delete(this.api + '/' + name, {
+                if (!this.authData.isSuperAdmin) {
+                    throw new types_1.ErrorResponse({ statusMessage: 'Only Super Admins Can Delete an App' });
+                }
+                let resp = yield got_1.default.delete(this.api + '/admin/app/' + name, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -320,22 +328,15 @@ exports.DataStack = DataStack;
 class DSApp {
     constructor(app) {
         this.app = new types_1.App(app);
-        this.api = authData.creds.host + '/api/a/sm/service';
-        this.managementAPIs = {
-            serviceStop: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/stop',
-            serviceStart: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/start'
-        };
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service`;
         this.dataServiceMap = {};
         this.CreateDataServiceMap();
     }
     CreateDataServiceMap() {
         return __awaiter(this, void 0, void 0, function* () {
-            const filter = { app: this.app._id };
             const searchParams = new URLSearchParams();
-            searchParams.append('filter', JSON.stringify(filter));
             searchParams.append('count', '-1');
             searchParams.append('select', '_id,name');
-            searchParams.append('app', this.app._id + '');
             let resp = yield got_1.default.get(this.api, {
                 searchParams: searchParams,
                 headers: {
@@ -351,15 +352,13 @@ class DSApp {
     RepairAllDataServices(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (!filter) {
-                    filter = {};
-                }
-                filter.app = this.app._id;
                 let searchParams = new URLSearchParams();
-                searchParams.append('filter', JSON.stringify(filter));
                 searchParams.append('count', '-1');
-                searchParams.append('app', this.app._id + '');
-                const resp = yield got_1.default.get(authData.creds.host + '/api/a/sm/service', {
+                searchParams.append('select', '_id,name');
+                if (filter) {
+                    searchParams.append('filter', JSON.stringify(filter));
+                }
+                const resp = yield got_1.default.get(this.api, {
                     searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
@@ -369,7 +368,7 @@ class DSApp {
                 if (resp.body && resp.body.length > 0) {
                     let promises = resp.body.map((e) => __awaiter(this, void 0, void 0, function* () {
                         logger.info('Repairing Data Service', e._id);
-                        let resp = yield got_1.default.put(authData.creds.host + `/api/a/sm/${e._id}/repair` + '?app=' + this.app._id, {
+                        let resp = yield got_1.default.put(this.api + `/utils/${e._id}/repair`, {
                             headers: {
                                 Authorization: 'JWT ' + authData.token
                             },
@@ -386,7 +385,7 @@ class DSApp {
                 }
             }
             catch (err) {
-                logError('[ERROR] [StartAllDataServices]', err);
+                logError('[ERROR] [RepairAllDataServices]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });
@@ -394,23 +393,13 @@ class DSApp {
     StartAllDataServices(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // let resp = await got.put(this.managementAPIs.serviceStart + '?app=' + this.app._id, {
-                //     headers: {
-                //         Authorization: 'JWT ' + authData.token
-                //     },
-                //     responseType: 'json',
-                //     json: {},
-                // }) as any;
-                // return this;
-                if (!filter) {
-                    filter = {};
-                }
-                filter.app = this.app._id;
                 let searchParams = new URLSearchParams();
-                searchParams.append('filter', JSON.stringify(filter));
                 searchParams.append('count', '-1');
-                searchParams.append('app', this.app._id + '');
-                const resp = yield got_1.default.get(authData.creds.host + '/api/a/sm/service', {
+                searchParams.append('select', '_id,name');
+                if (filter) {
+                    searchParams.append('filter', JSON.stringify(filter));
+                }
+                const resp = yield got_1.default.get(this.api, {
                     searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
@@ -419,8 +408,8 @@ class DSApp {
                 });
                 if (resp.body && resp.body.length > 0) {
                     let promises = resp.body.map((e) => __awaiter(this, void 0, void 0, function* () {
-                        logger.info('Repairing Data Service', e._id);
-                        let resp = yield got_1.default.put(authData.creds.host + `/api/a/sm/${e._id}/start` + '?app=' + this.app._id, {
+                        logger.info('Starting Data Service', e._id);
+                        let resp = yield got_1.default.put(this.api + `/utils/${e._id}/start`, {
                             headers: {
                                 Authorization: 'JWT ' + authData.token
                             },
@@ -445,23 +434,13 @@ class DSApp {
     StopAllDataServices(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // let resp = await got.put(this.managementAPIs.serviceStop + '?app=' + this.app._id, {
-                //     headers: {
-                //         Authorization: 'JWT ' + authData.token
-                //     },
-                //     responseType: 'json',
-                //     json: {},
-                // }) as any;
-                // return this;
-                if (!filter) {
-                    filter = {};
-                }
-                filter.app = this.app._id;
                 let searchParams = new URLSearchParams();
-                searchParams.append('filter', JSON.stringify(filter));
                 searchParams.append('count', '-1');
-                searchParams.append('app', this.app._id + '');
-                const resp = yield got_1.default.get(authData.creds.host + '/api/a/sm/service', {
+                searchParams.append('select', '_id,name');
+                if (filter) {
+                    searchParams.append('filter', JSON.stringify(filter));
+                }
+                const resp = yield got_1.default.get(this.api, {
                     searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
@@ -471,7 +450,7 @@ class DSApp {
                 if (resp.body && resp.body.length > 0) {
                     let promises = resp.body.map((e) => __awaiter(this, void 0, void 0, function* () {
                         logger.info('Repairing Data Service', e._id);
-                        let resp = yield got_1.default.put(authData.creds.host + `/api/a/sm/${e._id}/stop` + '?app=' + this.app._id, {
+                        let resp = yield got_1.default.put(this.api + `/utils/${e._id}/stop`, {
                             headers: {
                                 Authorization: 'JWT ' + authData.token
                             },
@@ -493,40 +472,13 @@ class DSApp {
             }
         });
     }
-    // public async ListDataServices(): Promise<DSDataService[]> {
-    //     try {
-    //         const filter = { app: this.app._id };
-    //         const searchParams = new URLSearchParams();
-    //         searchParams.append('app', this.app._id + '');
-    //         searchParams.append('filter', JSON.stringify(filter));
-    //         searchParams.append('count', '-1');
-    //         let resp = await got.get(this.api, {
-    //             searchParams: searchParams,
-    //             headers: {
-    //                 Authorization: 'JWT ' + authData.token
-    //             },
-    //             responseType: 'json'
-    //         }) as any;
-    //         return resp.body.map((item: any) => {
-    //             return new DSDataService(this.app, item);
-    //         });
-    //     } catch (err: any) {
-    //         logError('[ERROR] [ListDataServices]', err);
-    //         throw new ErrorResponse(err.response);
-    //     }
-    // }
     ListDataServices(options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const searchParams = new URLSearchParams();
-                searchParams.append('app', this.app._id + '');
                 if (!options) {
                     options = new types_1.ListOptions();
                 }
-                if (!options.filter) {
-                    options.filter = {};
-                }
-                options.filter.app = this.app._id;
                 if (options.filter) {
                     searchParams.append('filter', JSON.stringify(options.filter));
                 }
@@ -568,7 +520,7 @@ class DSApp {
                 const filter = { app: this.app._id, $or: [{ name }, { _id: name }] };
                 const searchParams = new URLSearchParams();
                 searchParams.append('filter', JSON.stringify(filter));
-                searchParams.append('app', this.app._id + '');
+                searchParams.append('count', '1');
                 let resp = yield got_1.default.get(this.api, {
                     searchParams: searchParams,
                     headers: {
@@ -592,7 +544,7 @@ class DSApp {
     CreateDataService(name, description) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.post(this.api + '?app=' + this.app._id, {
+                let resp = yield got_1.default.post(this.api, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -620,8 +572,7 @@ class DSDataService {
         this.app = new types_1.App(app);
         this.data = new types_1.DataService(data);
         this.originalData = new types_1.DataService(data);
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
-        this.smApi = authData.creds.host + `/api/a/sm/service`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service`;
         this._isDraft = false;
         if (this.data.HasDraft()) {
             this.FetchDraft();
@@ -632,7 +583,7 @@ class DSDataService {
             try {
                 const searchParams = new URLSearchParams();
                 searchParams.append('draft', 'true');
-                let resp = yield got_1.default.get(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+                let resp = yield got_1.default.get(this.api + `/${this.data._id}`, {
                     searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
@@ -690,22 +641,24 @@ class DSDataService {
         }
     }
     DiscardDraft() {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.delete(this.api + '/draftDelete' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.delete(this.api + `/utils/${(_a = this.data) === null || _a === void 0 ? void 0 : _a._id}/draftDelete`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
                     responseType: 'json',
                     json: {}
                 });
-                resp = (yield got_1.default.get(this.smApi + '/' + this.data._id, {
+                resp = (yield got_1.default.get(this.api + `/${this.data._id}`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
                     responseType: 'json'
                 }));
-                this.data = new types_1.DataService(this.originalData);
+                this.originalData = resp.body;
+                this.data = new types_1.DataService(resp.body);
                 this.draftData = undefined;
                 return this;
             }
@@ -718,7 +671,7 @@ class DSDataService {
     PurgeAllData() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.delete(this.api + '/purge/all' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.delete(this.api + `/utils/${this.data._id}/purge/all`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -736,7 +689,7 @@ class DSDataService {
     PurgeApiLogs() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.delete(this.api + '/purge/log' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.delete(this.api + `/utils/${this.data._id}/purge/log`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -754,7 +707,7 @@ class DSDataService {
     PurgeAuditLogs() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.delete(this.api + '/purge/audit' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.delete(this.api + `/utils/${this.data._id}/purge/audit`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -772,7 +725,7 @@ class DSDataService {
     Delete() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.delete(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+                let resp = yield got_1.default.delete(this.api + '/' + this.data._id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -790,7 +743,7 @@ class DSDataService {
     Start() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/start' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + `/utils/${this.data._id}/start`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -808,7 +761,7 @@ class DSDataService {
     Stop() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/stop' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + `/utils/${this.data._id}/stop`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -826,7 +779,7 @@ class DSDataService {
     ScaleUp() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/start' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + `/utils/${this.data._id}/start`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -844,7 +797,7 @@ class DSDataService {
     ScaleDown() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/stop' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + `/utils/${this.data._id}/stop`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -862,7 +815,7 @@ class DSDataService {
     Repair() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/repair' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + `/utils/${this.data._id}/repair`, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -890,7 +843,7 @@ class DSDataService {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 lodash_1.assignIn(this.data, data.getData());
-                let resp = yield got_1.default.put(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + '/' + this.data._id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -919,7 +872,7 @@ class DSDataService {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 lodash_1.assignIn(this.data, data.getData());
-                let resp = yield got_1.default.put(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + '/' + this.data._id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -948,7 +901,7 @@ class DSDataService {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 lodash_1.assignIn(this.data, data.getData());
-                let resp = yield got_1.default.put(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + '/' + this.data._id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -1000,7 +953,7 @@ class DSDataServiceRole {
     constructor(app, data) {
         this.app = app;
         this.data = data;
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service/${this.data._id}`;
     }
     getData() {
         return this.data;
@@ -1065,7 +1018,7 @@ class DSDataServiceIntegration {
     constructor(app, data) {
         this.app = app;
         this.data = data;
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service/${this.data._id}`;
     }
     getData() {
         return this.data;
@@ -1154,7 +1107,7 @@ class DSDataServiceSchema {
     constructor(app, data) {
         this.app = app;
         this.data = data;
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service/${this.data._id}`;
     }
     getData() {
         return this.data;
@@ -1240,7 +1193,6 @@ class DataMethods {
             try {
                 const searchParams = new URLSearchParams();
                 searchParams.append('countOnly', 'true');
-                searchParams.append('app', this.app._id + '');
                 if (filter) {
                     searchParams.append('filter', JSON.stringify(filter));
                 }
@@ -1263,7 +1215,6 @@ class DataMethods {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const searchParams = new URLSearchParams();
-                searchParams.append('app', this.app._id + '');
                 if (options === null || options === void 0 ? void 0 : options.select) {
                     searchParams.append('select', options.select);
                 }
@@ -1302,7 +1253,7 @@ class DataMethods {
     GetRecord(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.get(this.api + '/' + id + '?app=' + this.app._id, {
+                let resp = yield got_1.default.get(this.api + '/' + id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -1321,7 +1272,6 @@ class DataMethods {
             try {
                 let url = this.api + '/' + id;
                 const params = [];
-                params.push(`app=${this.app._id}`);
                 if (options) {
                     if (options.expireAfter !== null || options.expireAfter !== undefined) {
                         params.push(`expireAfter=${options.expireAfter}`);
@@ -1353,7 +1303,6 @@ class DataMethods {
             try {
                 let url = this.api + '/' + id;
                 const params = ['upsert=true'];
-                params.push(`app=${this.app._id}`);
                 if (options) {
                     if (options.expireAfter !== null || options.expireAfter !== undefined) {
                         params.push(`expireAfter=${options.expireAfter}`);
@@ -1385,7 +1334,6 @@ class DataMethods {
             try {
                 let url = this.api;
                 const params = [];
-                params.push(`app=${this.app._id}`);
                 if (options) {
                     if (options.expireAfter !== null || options.expireAfter !== undefined) {
                         params.push(`expireAfter=${options.expireAfter}`);
@@ -1415,7 +1363,7 @@ class DataMethods {
     DeleteRecord(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.delete(this.api + '/' + id + '?app=' + this.app._id, {
+                let resp = yield got_1.default.delete(this.api + '/' + id, {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -1442,7 +1390,7 @@ class DataMethods {
     ApplyMath(id, math) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                let resp = yield got_1.default.put(this.api + '/' + id + '/math?app=' + this.app._id, {
+                let resp = yield got_1.default.put(this.api + '/' + id + '/math', {
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
@@ -1462,7 +1410,7 @@ class DataMethods {
             try {
                 const form = new form_data_1.default();
                 form.append('file', fs_1.createReadStream(filePath));
-                let resp = yield got_1.default.post(this.api + '/utils/file/upload?app=' + this.app._id, {
+                let resp = yield got_1.default.post(this.api + '/utils/file/upload', {
                     headers: {
                         Authorization: 'JWT ' + authData.token,
                     },
@@ -1499,7 +1447,7 @@ class DataMethods {
             try {
                 const form = new form_data_1.default();
                 form.append('file', data);
-                let resp = yield got_1.default.post(this.api + '/utils/file/upload' + '?app=' + this.app._id, {
+                let resp = yield got_1.default.post(this.api + '/utils/file/upload', {
                     headers: {
                         Authorization: 'JWT ' + authData.token,
                     },
@@ -1507,6 +1455,23 @@ class DataMethods {
                     responseType: 'json'
                 });
                 return new types_1.FileUploadResponse(resp.body);
+            }
+            catch (err) {
+                logError('[ERROR] [UploadFileAsStream]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    DownloadFileAsStream(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.stream(this.api + '/utils/file/download/' + data.filename, {
+                    isStream: true,
+                    headers: {
+                        Authorization: 'JWT ' + authData.token,
+                    }
+                });
+                return resp;
             }
             catch (err) {
                 logError('[ERROR] [UploadFileAsStream]', err);

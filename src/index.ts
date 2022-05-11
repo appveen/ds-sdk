@@ -16,6 +16,7 @@ interface AuthData {
     uuid: string | undefined;
     token: string | undefined;
     rToken: string | undefined;
+    isSuperAdmin: boolean;
     expiresIn: number | undefined;
     rbacBotTokenDuration: number | undefined;
     rbacHbInterval: number | undefined;
@@ -71,6 +72,7 @@ class AuthHandler implements AuthData {
     uuid: string | undefined;
     token: string | undefined;
     rToken: string | undefined;
+    isSuperAdmin: boolean;
     expiresIn: number | undefined;
     rbacBotTokenDuration: number = 600;
     rbacHbInterval: number = 60;
@@ -90,6 +92,7 @@ class AuthHandler implements AuthData {
         this.creds = new Credentials(creds);
         this.api = this.creds.host + '/api/a/rbac';
         this.defaultTimezone = 'Zulu';
+        this.isSuperAdmin = false;
     }
 
     async login(): Promise<DataStack> {
@@ -97,7 +100,7 @@ class AuthHandler implements AuthData {
             logger.info('Authenticating at:', this.creds.host);
             logger.info('Using Username:', this.creds.username);
             const payload = { username: this.creds.username, password: this.creds.password };
-            const resp = await got.post(this.api + '/login', { json: payload, responseType: 'json' });
+            const resp = await got.post(this.api + '/auth/login', { json: payload, responseType: 'json' });
             const data = resp.body;
             this.patchData(data);
             logger.info('Authentication Successfull');
@@ -117,7 +120,7 @@ class AuthHandler implements AuthData {
 
     async logout(): Promise<void> {
         try {
-            const resp = await got.delete(this.api + '/logout', { responseType: 'json' });
+            const resp = await got.delete(this.api + '/auth/logout', { responseType: 'json' });
             logger.info('Logged out Successfull');
             this.clearRoutine();
         } catch (err: any) {
@@ -127,7 +130,7 @@ class AuthHandler implements AuthData {
 
     async authenticateByToken(): Promise<DataStack> {
         try {
-            const resp = await got.get(this.api + '/check', { responseType: 'json', headers: { authorization: this.creds.token } });
+            const resp = await got.get(this.api + '/auth/check', { responseType: 'json', headers: { authorization: this.creds.token } });
             const data = resp.body;
             this.patchData(data);
             if (this.rbacUserToSingleSession || this.rbacUserCloseWindowToLogout) {
@@ -148,7 +151,7 @@ class AuthHandler implements AuthData {
             logger.info('[HB Triggred]');
             logger.debug(this.token, this.uuid);
             try {
-                let resp = await got.put(this.api + '/usr/hb', {
+                let resp = await got.put(this.api + '/auth/hb', {
                     headers: {
                         Authorization: 'JWT ' + this.token
                     },
@@ -182,7 +185,7 @@ class AuthHandler implements AuthData {
             logger.info('[Refresh Triggred]');
             logger.debug(this.token, this.rToken);
             try {
-                let resp = await got.get(this.api + '/refresh', {
+                let resp = await got.get(this.api + '/auth/refresh', {
                     headers: {
                         rToken: 'JWT ' + this.rToken,
                         Authorization: 'JWT ' + this.token
@@ -220,6 +223,7 @@ class AuthHandler implements AuthData {
         this.token = data?.token;
         this.rToken = data?.rToken;
         this.expiresIn = data?.expiresIn;
+        this.isSuperAdmin = data?.isSuperAdmin || false;
         this.rbacBotTokenDuration = data?.rbacBotTokenDuration || 600;
         this.rbacHbInterval = data?.rbacHbInterval || 60;
         this.rbacUserCloseWindowToLogout = data?.rbacUserCloseWindowToLogout || false;
@@ -239,7 +243,7 @@ export class DataStack {
     authData: AuthData;
     api: string;
     constructor(data: AuthData) {
-        this.api = authData.creds.host + '/api/a/rbac/app';
+        this.api = authData.creds.host + '/api/a/rbac';
         this.authData = data;
     }
 
@@ -257,7 +261,7 @@ export class DataStack {
         try {
             const searchParams = new URLSearchParams();
             searchParams.append('count', '-1');
-            let resp = await got.get(this.api, {
+            let resp = await got.get(this.api + '/data/app', {
                 searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
@@ -275,7 +279,7 @@ export class DataStack {
 
     public async App(name: string): Promise<DSApp> {
         try {
-            let resp = await got.get(this.api + '/' + name, {
+            let resp = await got.get(this.api + '/data/app/' + name, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -290,7 +294,10 @@ export class DataStack {
 
     public async CreateApp(name: string): Promise<DSApp> {
         try {
-            let resp = await got.post(this.api, {
+            if (!this.authData.isSuperAdmin) {
+                throw new ErrorResponse({ statusMessage: 'Only Super Admins Can Create an App' });
+            }
+            let resp = await got.post(this.api + '/admin/app', {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -309,7 +316,10 @@ export class DataStack {
 
     public async DeleteApp(name: string): Promise<DataStack> {
         try {
-            let resp = await got.delete(this.api + '/' + name, {
+            if (!this.authData.isSuperAdmin) {
+                throw new ErrorResponse({ statusMessage: 'Only Super Admins Can Delete an App' });
+            }
+            let resp = await got.delete(this.api + '/admin/app/' + name, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -327,26 +337,18 @@ export class DataStack {
 export class DSApp {
     app: App;
     api: string;
-    private managementAPIs: any;
     private dataServiceMap: any;
     constructor(app: App) {
         this.app = new App(app);
-        this.api = authData.creds.host + '/api/a/sm/service';
-        this.managementAPIs = {
-            serviceStop: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/stop',
-            serviceStart: authData.creds.host + '/api/a/sm/' + this.app._id + '/service/start'
-        };
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service`;
         this.dataServiceMap = {};
         this.CreateDataServiceMap();
     }
 
     private async CreateDataServiceMap() {
-        const filter = { app: this.app._id };
         const searchParams = new URLSearchParams();
-        searchParams.append('filter', JSON.stringify(filter));
         searchParams.append('count', '-1');
         searchParams.append('select', '_id,name');
-        searchParams.append('app', this.app._id + '');
         let resp = await got.get(this.api, {
             searchParams: searchParams,
             headers: {
@@ -361,15 +363,13 @@ export class DSApp {
 
     public async RepairAllDataServices(filter: any): Promise<SuccessResponse[]> {
         try {
-            if (!filter) {
-                filter = {};
-            }
-            filter.app = this.app._id
             let searchParams = new URLSearchParams();
-            searchParams.append('filter', JSON.stringify(filter));
             searchParams.append('count', '-1');
-            searchParams.append('app', this.app._id + '');
-            const resp = await got.get(authData.creds.host + '/api/a/sm/service', {
+            searchParams.append('select', '_id,name');
+            if (filter) {
+                searchParams.append('filter', JSON.stringify(filter));
+            }
+            const resp = await got.get(this.api, {
                 searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
@@ -379,7 +379,7 @@ export class DSApp {
             if (resp.body && resp.body.length > 0) {
                 let promises = resp.body.map(async (e: any) => {
                     logger.info('Repairing Data Service', e._id);
-                    let resp = await got.put(authData.creds.host + `/api/a/sm/${e._id}/repair` + '?app=' + this.app._id, {
+                    let resp = await got.put(this.api + `/utils/${e._id}/repair`, {
                         headers: {
                             Authorization: 'JWT ' + authData.token
                         },
@@ -394,30 +394,20 @@ export class DSApp {
                 return [];
             }
         } catch (err: any) {
-            logError('[ERROR] [StartAllDataServices]', err);
+            logError('[ERROR] [RepairAllDataServices]', err);
             throw new ErrorResponse(err.response);
         }
     }
 
     public async StartAllDataServices(filter: any): Promise<SuccessResponse[]> {
         try {
-            // let resp = await got.put(this.managementAPIs.serviceStart + '?app=' + this.app._id, {
-            //     headers: {
-            //         Authorization: 'JWT ' + authData.token
-            //     },
-            //     responseType: 'json',
-            //     json: {},
-            // }) as any;
-            // return this;
-            if (!filter) {
-                filter = {};
-            }
-            filter.app = this.app._id
             let searchParams = new URLSearchParams();
-            searchParams.append('filter', JSON.stringify(filter));
             searchParams.append('count', '-1');
-            searchParams.append('app', this.app._id + '');
-            const resp = await got.get(authData.creds.host + '/api/a/sm/service', {
+            searchParams.append('select', '_id,name');
+            if (filter) {
+                searchParams.append('filter', JSON.stringify(filter));
+            }
+            const resp = await got.get(this.api, {
                 searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
@@ -426,8 +416,8 @@ export class DSApp {
             }) as any;
             if (resp.body && resp.body.length > 0) {
                 let promises = resp.body.map(async (e: any) => {
-                    logger.info('Repairing Data Service', e._id);
-                    let resp = await got.put(authData.creds.host + `/api/a/sm/${e._id}/start` + '?app=' + this.app._id, {
+                    logger.info('Starting Data Service', e._id);
+                    let resp = await got.put(this.api + `/utils/${e._id}/start`, {
                         headers: {
                             Authorization: 'JWT ' + authData.token
                         },
@@ -449,23 +439,13 @@ export class DSApp {
 
     public async StopAllDataServices(filter: any): Promise<SuccessResponse[]> {
         try {
-            // let resp = await got.put(this.managementAPIs.serviceStop + '?app=' + this.app._id, {
-            //     headers: {
-            //         Authorization: 'JWT ' + authData.token
-            //     },
-            //     responseType: 'json',
-            //     json: {},
-            // }) as any;
-            // return this;
-            if (!filter) {
-                filter = {};
-            }
-            filter.app = this.app._id
             let searchParams = new URLSearchParams();
-            searchParams.append('filter', JSON.stringify(filter));
             searchParams.append('count', '-1');
-            searchParams.append('app', this.app._id + '');
-            const resp = await got.get(authData.creds.host + '/api/a/sm/service', {
+            searchParams.append('select', '_id,name');
+            if (filter) {
+                searchParams.append('filter', JSON.stringify(filter));
+            }
+            const resp = await got.get(this.api, {
                 searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
@@ -475,7 +455,7 @@ export class DSApp {
             if (resp.body && resp.body.length > 0) {
                 let promises = resp.body.map(async (e: any) => {
                     logger.info('Repairing Data Service', e._id);
-                    let resp = await got.put(authData.creds.host + `/api/a/sm/${e._id}/stop` + '?app=' + this.app._id, {
+                    let resp = await got.put(this.api + `/utils/${e._id}/stop`, {
                         headers: {
                             Authorization: 'JWT ' + authData.token
                         },
@@ -495,40 +475,12 @@ export class DSApp {
         }
     }
 
-    // public async ListDataServices(): Promise<DSDataService[]> {
-    //     try {
-    //         const filter = { app: this.app._id };
-    //         const searchParams = new URLSearchParams();
-    //         searchParams.append('app', this.app._id + '');
-    //         searchParams.append('filter', JSON.stringify(filter));
-    //         searchParams.append('count', '-1');
-    //         let resp = await got.get(this.api, {
-    //             searchParams: searchParams,
-    //             headers: {
-    //                 Authorization: 'JWT ' + authData.token
-    //             },
-    //             responseType: 'json'
-    //         }) as any;
-    //         return resp.body.map((item: any) => {
-    //             return new DSDataService(this.app, item);
-    //         });
-    //     } catch (err: any) {
-    //         logError('[ERROR] [ListDataServices]', err);
-    //         throw new ErrorResponse(err.response);
-    //     }
-    // }
-
     public async ListDataServices(options: ListOptions): Promise<DSDataService[]> {
         try {
             const searchParams = new URLSearchParams();
-            searchParams.append('app', this.app._id + '');
             if (!options) {
                 options = new ListOptions();
             }
-            if (!options.filter) {
-                options.filter = {};
-            }
-            options.filter.app = this.app._id;
             if (options.filter) {
                 searchParams.append('filter', JSON.stringify(options.filter));
             }
@@ -567,7 +519,7 @@ export class DSApp {
             const filter = { app: this.app._id, $or: [{ name }, { _id: name }] };
             const searchParams = new URLSearchParams();
             searchParams.append('filter', JSON.stringify(filter));
-            searchParams.append('app', this.app._id + '');
+            searchParams.append('count', '1');
             let resp = await got.get(this.api, {
                 searchParams: searchParams,
                 headers: {
@@ -588,7 +540,7 @@ export class DSApp {
 
     public async CreateDataService(name: string, description?: string): Promise<DSDataService> {
         try {
-            let resp = await got.post(this.api + '?app=' + this.app._id, {
+            let resp = await got.post(this.api, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -617,14 +569,12 @@ export class DSDataService {
     private originalData: DataService | undefined;
     private draftData: DataService | undefined;
     private api: string;
-    private smApi: string;
     private _isDraft: boolean;
     constructor(app: App, data: DataService) {
         this.app = new App(app);
         this.data = new DataService(data);
         this.originalData = new DataService(data);
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
-        this.smApi = authData.creds.host + `/api/a/sm/service`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service`;
         this._isDraft = false;
         if (this.data.HasDraft()) {
             this.FetchDraft();
@@ -635,7 +585,7 @@ export class DSDataService {
         try {
             const searchParams = new URLSearchParams();
             searchParams.append('draft', 'true');
-            let resp = await got.get(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+            let resp = await got.get(this.api + `/${this.data._id}`, {
                 searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
@@ -693,20 +643,21 @@ export class DSDataService {
 
     public async DiscardDraft(): Promise<DSDataService> {
         try {
-            let resp = await got.delete(this.api + '/draftDelete' + '?app=' + this.app._id, {
+            let resp = await got.delete(this.api + `/utils/${this.data?._id}/draftDelete`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
                 responseType: 'json',
                 json: {}
             }) as any;
-            resp = await got.get(this.smApi + '/' + this.data._id, {
+            resp = await got.get(this.api + `/${this.data._id}`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
                 responseType: 'json'
             }) as any;
-            this.data = new DataService(this.originalData);
+            this.originalData = resp.body;
+            this.data = new DataService(resp.body);
             this.draftData = undefined;
             return this;
         } catch (err: any) {
@@ -717,7 +668,7 @@ export class DSDataService {
 
     public async PurgeAllData(): Promise<DSDataService> {
         try {
-            let resp = await got.delete(this.api + '/purge/all' + '?app=' + this.app._id, {
+            let resp = await got.delete(this.api + `/utils/${this.data._id}/purge/all`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -733,7 +684,7 @@ export class DSDataService {
 
     public async PurgeApiLogs(): Promise<DSDataService> {
         try {
-            let resp = await got.delete(this.api + '/purge/log' + '?app=' + this.app._id, {
+            let resp = await got.delete(this.api + `/utils/${this.data._id}/purge/log`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -749,7 +700,7 @@ export class DSDataService {
 
     public async PurgeAuditLogs(): Promise<DSDataService> {
         try {
-            let resp = await got.delete(this.api + '/purge/audit' + '?app=' + this.app._id, {
+            let resp = await got.delete(this.api + `/utils/${this.data._id}/purge/audit`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -765,7 +716,7 @@ export class DSDataService {
 
     public async Delete(): Promise<DSApp> {
         try {
-            let resp = await got.delete(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+            let resp = await got.delete(this.api + '/' + this.data._id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -781,7 +732,7 @@ export class DSDataService {
 
     public async Start(): Promise<ErrorResponse> {
         try {
-            let resp = await got.put(this.api + '/start' + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + `/utils/${this.data._id}/start`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -797,7 +748,7 @@ export class DSDataService {
 
     public async Stop(): Promise<ErrorResponse> {
         try {
-            let resp = await got.put(this.api + '/stop' + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + `/utils/${this.data._id}/stop`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -813,7 +764,7 @@ export class DSDataService {
 
     public async ScaleUp(): Promise<ErrorResponse> {
         try {
-            let resp = await got.put(this.api + '/start' + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + `/utils/${this.data._id}/start`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -829,7 +780,7 @@ export class DSDataService {
 
     public async ScaleDown(): Promise<ErrorResponse> {
         try {
-            let resp = await got.put(this.api + '/stop' + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + `/utils/${this.data._id}/stop`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -845,7 +796,7 @@ export class DSDataService {
 
     public async Repair(): Promise<ErrorResponse> {
         try {
-            let resp = await got.put(this.api + '/repair' + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + `/utils/${this.data._id}/repair`, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -871,7 +822,7 @@ export class DSDataService {
     public async setIntegrations(data: DSDataServiceIntegration): Promise<DSDataService> {
         try {
             assignIn(this.data, data.getData());
-            let resp = await got.put(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + '/' + this.data._id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -898,7 +849,7 @@ export class DSDataService {
     public async setRoles(data: DSDataServiceRole): Promise<DSDataService> {
         try {
             assignIn(this.data, data.getData());
-            let resp = await got.put(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + '/' + this.data._id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -925,7 +876,7 @@ export class DSDataService {
     public async setSchema(data: DSDataServiceSchema): Promise<DSDataService> {
         try {
             assignIn(this.data, data.getData());
-            let resp = await got.put(this.smApi + '/' + this.data._id + '?app=' + this.app._id, {
+            let resp = await got.put(this.api + '/' + this.data._id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -979,7 +930,7 @@ export class DSDataServiceRole {
     constructor(app: App, data: DataService) {
         this.app = app;
         this.data = data;
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service/${this.data._id}`;
     }
 
     public getData(): DataService {
@@ -1049,7 +1000,7 @@ export class DSDataServiceIntegration {
     constructor(app: App, data: DataService) {
         this.app = app;
         this.data = data;
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service/${this.data._id}`;
     }
 
     public getData(): DataService {
@@ -1142,7 +1093,7 @@ export class DSDataServiceSchema {
     constructor(app: App, data: DataService) {
         this.app = app;
         this.data = data;
-        this.api = authData.creds.host + `/api/a/sm/${this.data._id}`;
+        this.api = authData.creds.host + `/api/a/sm/${this.app._id}/service/${this.data._id}`;
     }
 
     public getData(): DataService {
@@ -1235,7 +1186,6 @@ export class DataMethods {
         try {
             const searchParams = new URLSearchParams();
             searchParams.append('countOnly', 'true');
-            searchParams.append('app', this.app._id + '');
             if (filter) {
                 searchParams.append('filter', JSON.stringify(filter));
             }
@@ -1256,7 +1206,6 @@ export class DataMethods {
     public async ListRecords(options: ListOptions): Promise<DataStackDocument[]> {
         try {
             const searchParams = new URLSearchParams();
-            searchParams.append('app', this.app._id + '');
             if (options?.select) {
                 searchParams.append('select', options.select);
             }
@@ -1293,7 +1242,7 @@ export class DataMethods {
 
     public async GetRecord(id: string): Promise<DataStackDocument> {
         try {
-            let resp = await got.get(this.api + '/' + id + '?app=' + this.app._id, {
+            let resp = await got.get(this.api + '/' + id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -1310,7 +1259,6 @@ export class DataMethods {
         try {
             let url = this.api + '/' + id;
             const params = [];
-            params.push(`app=${this.app._id}`);
             if (options) {
                 if (options.expireAfter !== null || options.expireAfter !== undefined) {
                     params.push(`expireAfter=${options.expireAfter}`);
@@ -1340,7 +1288,6 @@ export class DataMethods {
         try {
             let url = this.api + '/' + id;
             const params = ['upsert=true'];
-            params.push(`app=${this.app._id}`);
             if (options) {
                 if (options.expireAfter !== null || options.expireAfter !== undefined) {
                     params.push(`expireAfter=${options.expireAfter}`);
@@ -1370,7 +1317,6 @@ export class DataMethods {
         try {
             let url = this.api;
             const params = [];
-            params.push(`app=${this.app._id}`);
             if (options) {
                 if (options.expireAfter !== null || options.expireAfter !== undefined) {
                     params.push(`expireAfter=${options.expireAfter}`);
@@ -1398,7 +1344,7 @@ export class DataMethods {
 
     public async DeleteRecord(id: string): Promise<ErrorResponse> {
         try {
-            let resp = await got.delete(this.api + '/' + id + '?app=' + this.app._id, {
+            let resp = await got.delete(this.api + '/' + id, {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -1423,7 +1369,7 @@ export class DataMethods {
 
     public async ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument> {
         try {
-            let resp = await got.put(this.api + '/' + id + '/math?app=' + this.app._id, {
+            let resp = await got.put(this.api + '/' + id + '/math', {
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
@@ -1441,7 +1387,7 @@ export class DataMethods {
         try {
             const form = new FormData();
             form.append('file', createReadStream(filePath));
-            let resp = await got.post(this.api + '/utils/file/upload?app=' + this.app._id, {
+            let resp = await got.post(this.api + '/utils/file/upload', {
                 headers: {
                     Authorization: 'JWT ' + authData.token,
                 },
@@ -1475,7 +1421,7 @@ export class DataMethods {
         try {
             const form = new FormData();
             form.append('file', data);
-            let resp = await got.post(this.api + '/utils/file/upload' + '?app=' + this.app._id, {
+            let resp = await got.post(this.api + '/utils/file/upload', {
                 headers: {
                     Authorization: 'JWT ' + authData.token,
                 },
@@ -1483,6 +1429,21 @@ export class DataMethods {
                 responseType: 'json'
             }) as any;
             return new FileUploadResponse(resp.body);
+        } catch (err: any) {
+            logError('[ERROR] [UploadFileAsStream]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async DownloadFileAsStream(data: any) {
+        try {
+            let resp = await got.stream(this.api + '/utils/file/download/' + data.filename, {
+                isStream: true,
+                headers: {
+                    Authorization: 'JWT ' + authData.token,
+                }
+            }) as any;
+            return resp;
         } catch (err: any) {
             logError('[ERROR] [UploadFileAsStream]', err);
             throw new ErrorResponse(err.response);
