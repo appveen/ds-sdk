@@ -796,6 +796,23 @@ class DSDataService {
             }
         });
     }
+    Yamls() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.get(this.api + `/utils/${this.data._id}/yamls`, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return new types_1.Yamls(resp.body);
+            }
+            catch (err) {
+                logError('[ERROR] [Yamls]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
     Start() {
         return __awaiter(this, void 0, void 0, function* () {
             try {

@@ -1,4 +1,6 @@
+/// <reference types="node" />
 import { Logger } from 'log4js';
+import { WriteStream } from 'fs';
 export declare class App {
     _id: string | undefined;
     description: string | undefined;
@@ -308,4 +310,13 @@ export declare class WorkflowRespond {
     RemoveFile(name: string): WorkflowRespond;
     SetRemarks(text: string | null): WorkflowRespond;
     CreatePayload(): any;
+}
+export declare class Yamls {
+    private service;
+    private deployment;
+    constructor(data?: any);
+    saveToPath(folderPath: string, options?: {
+        seperate: boolean;
+    }): void;
+    writeToStream(stream: WriteStream): void;
 }

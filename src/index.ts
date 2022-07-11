@@ -4,7 +4,7 @@ import { assignIn } from 'lodash';
 import { interval } from 'rxjs';
 import { getLogger } from 'log4js';
 import { createReadStream } from 'fs';
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, WorkflowActions, FileUploadResponse } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, WorkflowActions, FileUploadResponse, Yamls } from './types';
 import { LIB_VERSION } from './version';
 
 var authData: AuthHandler;
@@ -782,7 +782,22 @@ export class DSDataService {
         }
     }
 
-    public async Start(): Promise<ErrorResponse> {
+    public async Yamls(): Promise<Yamls | ErrorResponse> {
+        try {
+            let resp = await got.get(this.api + `/utils/${this.data._id}/yamls`, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return new Yamls(resp.body);
+        } catch (err: any) {
+            logError('[ERROR] [Yamls]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async Start(): Promise<SuccessResponse | ErrorResponse> {
         try {
             let resp = await got.put(this.api + `/utils/${this.data._id}/start`, {
                 headers: {
@@ -798,7 +813,7 @@ export class DSDataService {
         }
     }
 
-    public async Stop(): Promise<ErrorResponse> {
+    public async Stop(): Promise<SuccessResponse | ErrorResponse> {
         try {
             let resp = await got.put(this.api + `/utils/${this.data._id}/stop`, {
                 headers: {
@@ -814,7 +829,7 @@ export class DSDataService {
         }
     }
 
-    public async ScaleUp(): Promise<ErrorResponse> {
+    public async ScaleUp(): Promise<SuccessResponse | ErrorResponse> {
         try {
             let resp = await got.put(this.api + `/utils/${this.data._id}/start`, {
                 headers: {
@@ -830,7 +845,7 @@ export class DSDataService {
         }
     }
 
-    public async ScaleDown(): Promise<ErrorResponse> {
+    public async ScaleDown(): Promise<SuccessResponse | ErrorResponse> {
         try {
             let resp = await got.put(this.api + `/utils/${this.data._id}/stop`, {
                 headers: {
@@ -846,7 +861,7 @@ export class DSDataService {
         }
     }
 
-    public async Repair(): Promise<ErrorResponse> {
+    public async Repair(): Promise<SuccessResponse | ErrorResponse> {
         try {
             let resp = await got.put(this.api + `/utils/${this.data._id}/repair`, {
                 headers: {

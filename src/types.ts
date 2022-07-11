@@ -1,6 +1,7 @@
 import { camelCase, startCase, set, get } from 'lodash';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { Logger } from 'log4js';
+import { WriteStream } from 'fs';
 
 export class App {
     _id: string | undefined;
@@ -750,5 +751,30 @@ export class WorkflowRespond {
             remarks: this.remarks,
             attachments: this.attachments
         };
+    }
+}
+
+export class Yamls {
+    private service: string;
+    private deployment: string;
+
+    constructor(data?: any) {
+        if (data) Object.assign(this, data);
+        this.service = data?.service;
+        this.deployment = data?.deployment;
+    }
+
+    saveToPath(folderPath: string, options?: { seperate: boolean }) {
+        if (options && options.seperate) {
+            writeFileSync(folderPath + '/service.yaml', this.service, { encoding: 'utf-8' });
+            writeFileSync(folderPath + '/deployment.yaml', this.deployment, { encoding: 'utf-8' });
+        } else {
+            writeFileSync(folderPath + '/k8s.yaml', this.service + '\n---\n' + this.deployment, { encoding: 'utf-8' });
+        }
+    }
+
+    writeToStream(stream: WriteStream) {
+        stream.write(this.service + '\n---\n' + this.deployment);
+        stream.end();
     }
 }

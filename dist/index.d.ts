@@ -1,4 +1,4 @@
-import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, FileUploadResponse } from './types';
+import { Credentials, App, ListOptions, ErrorResponse, DataService, DataStackDocument, WebHook, RoleBlock, SchemaField, SuccessResponse, WorkflowRespond, FileUploadResponse, Yamls } from './types';
 interface AuthData {
     _id: string | undefined;
     uuid: string | undefined;
@@ -62,11 +62,12 @@ export declare class DSDataService {
     PurgeApiLogs(): Promise<DSDataService>;
     PurgeAuditLogs(): Promise<DSDataService>;
     Delete(): Promise<DSApp>;
-    Start(): Promise<ErrorResponse>;
-    Stop(): Promise<ErrorResponse>;
-    ScaleUp(): Promise<ErrorResponse>;
-    ScaleDown(): Promise<ErrorResponse>;
-    Repair(): Promise<ErrorResponse>;
+    Yamls(): Promise<Yamls | ErrorResponse>;
+    Start(): Promise<SuccessResponse | ErrorResponse>;
+    Stop(): Promise<SuccessResponse | ErrorResponse>;
+    ScaleUp(): Promise<SuccessResponse | ErrorResponse>;
+    ScaleDown(): Promise<SuccessResponse | ErrorResponse>;
+    Repair(): Promise<SuccessResponse | ErrorResponse>;
     getIntegrations(): DSDataServiceIntegration;
     setIntegrations(data: DSDataServiceIntegration): Promise<DSDataService>;
     getRoles(): DSDataServiceRole;

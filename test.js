@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const SDK = require('./dist/index');
@@ -17,9 +18,11 @@ const TOKEN = process.env.DATA_STACK_TOKEN;
     });
     console.log('Valid Token');
     const app = await dataStack.App('Jugnu');
-    const dataService = await app.ListDataServices({select:'name,app,api,status,deploymentName'});
+    const dataService = await app.DataService('secure-test');
+    const yaml = await dataService.Yamls();
+    yaml.writeToStream(fs.createWriteStream(path.join(__dirname,'test-files','test.yaml')));
     // const file = await dataService.DataAPIs().UploadFileFromPath(path.join(__dirname,'test.txt'));
-    console.log(dataService);
+    console.log(yaml);
     // const status = await app.StartAllDataServices();
     // let dataService = await app.DataService('Employee');
     // const math = dataService.DataAPIs().PrepareMath();
