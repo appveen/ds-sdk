@@ -5,6 +5,8 @@ const lodash_1 = require("lodash");
 const fs_1 = require("fs");
 class App {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this._id = data === null || data === void 0 ? void 0 : data._id;
         this.description = data === null || data === void 0 ? void 0 : data.description;
         this.appCenterStyle = data === null || data === void 0 ? void 0 : data.appCenterStyle;
@@ -16,6 +18,8 @@ class App {
 exports.App = App;
 class AppCenterStyle {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.theme = data === null || data === void 0 ? void 0 : data.theme;
         this.bannerColor = data === null || data === void 0 ? void 0 : data.bannerColor;
         this.primaryColor = data === null || data === void 0 ? void 0 : data.primaryColor;
@@ -25,6 +29,8 @@ class AppCenterStyle {
 exports.AppCenterStyle = AppCenterStyle;
 class Logo {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.full = data === null || data === void 0 ? void 0 : data.full;
         this.thumbnail = data === null || data === void 0 ? void 0 : data.thumbnail;
     }
@@ -32,6 +38,8 @@ class Logo {
 exports.Logo = Logo;
 class UserDetails {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this._id = data === null || data === void 0 ? void 0 : data._id;
         this.basicDetails = data === null || data === void 0 ? void 0 : data.basicDetails;
         this.enableSessionRefresh = data === null || data === void 0 ? void 0 : data.enableSessionRefresh;
@@ -63,6 +71,8 @@ class UserDetails {
 exports.UserDetails = UserDetails;
 class Auth {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.isLdap = data === null || data === void 0 ? void 0 : data.isLdap;
         this.dn = data === null || data === void 0 ? void 0 : data.dn;
         this.authType = data === null || data === void 0 ? void 0 : data.authType;
@@ -71,6 +81,8 @@ class Auth {
 exports.Auth = Auth;
 class AccessControl {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.apps = data === null || data === void 0 ? void 0 : data.apps;
         this.accessLevel = data === null || data === void 0 ? void 0 : data.accessLevel;
     }
@@ -78,6 +90,8 @@ class AccessControl {
 exports.AccessControl = AccessControl;
 class BasicDetails {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.name = data === null || data === void 0 ? void 0 : data.name;
         this.email = data === null || data === void 0 ? void 0 : data.email;
         this.phone = data === null || data === void 0 ? void 0 : data.phone;
@@ -86,6 +100,8 @@ class BasicDetails {
 exports.BasicDetails = BasicDetails;
 class Credentials {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.host = (data === null || data === void 0 ? void 0 : data.host) || process.env.DATA_STACK_HOST;
         this.username = (data === null || data === void 0 ? void 0 : data.username) || process.env.DATA_STACK_USERNAME;
         this.password = (data === null || data === void 0 ? void 0 : data.password) || process.env.DATA_STACK_PASSWORD;
@@ -95,6 +111,8 @@ class Credentials {
 exports.Credentials = Credentials;
 class ListOptions {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.select = data === null || data === void 0 ? void 0 : data.select;
         this.sort = data === null || data === void 0 ? void 0 : data.sort;
         this.page = data === null || data === void 0 ? void 0 : data.page;
@@ -106,7 +124,9 @@ class ListOptions {
 exports.ListOptions = ListOptions;
 class DataService {
     constructor(data) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _q, _r, _s, _u, _v, _w, _x;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _q, _r, _s, _u, _v, _w, _x, _y;
+        if (data)
+            Object.assign(this, data);
         this._id = data === null || data === void 0 ? void 0 : data._id;
         this.name = data === null || data === void 0 ? void 0 : data.name;
         this.description = data === null || data === void 0 ? void 0 : data.description;
@@ -142,6 +162,8 @@ class DataService {
         this.role = (data === null || data === void 0 ? void 0 : data.role) || { fields: {}, roles: [new RoleBlock()] };
         this.draftVersion = data === null || data === void 0 ? void 0 : data.draftVersion;
         this.version = (data === null || data === void 0 ? void 0 : data.version) || 1;
+        this.deploymentName = lodash_1.camelCase(this.name).toLowerCase();
+        this.deploymentNamespace = (_y = this.app) === null || _y === void 0 ? void 0 : _y.toLowerCase();
     }
     HasDraft() {
         try {
@@ -159,6 +181,8 @@ class DataService {
 exports.DataService = DataService;
 class RoleBlock {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.id = (data === null || data === void 0 ? void 0 : data.id) || 'P' + Math.ceil(Math.random() * 10000000000);
         this.name = data === null || data === void 0 ? void 0 : data.name;
         this.description = data === null || data === void 0 ? void 0 : data.description;
@@ -231,6 +255,8 @@ var RoleMethods;
 })(RoleMethods = exports.RoleMethods || (exports.RoleMethods = {}));
 class ErrorResponse {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         if (typeof data === 'string') {
             this.statusCode = 500;
             this.body = { message: data };
@@ -246,20 +272,24 @@ class ErrorResponse {
 exports.ErrorResponse = ErrorResponse;
 class SuccessResponse {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.message = data === null || data === void 0 ? void 0 : data.message;
     }
 }
 exports.SuccessResponse = SuccessResponse;
 class FileUploadResponse {
     constructor(data) {
-        Object.assign(this, data);
+        if (data)
+            Object.assign(this, data);
     }
 }
 exports.FileUploadResponse = FileUploadResponse;
 class DataStackDocument {
     constructor(data) {
         if (data) {
-            Object.assign(this, data);
+            if (data)
+                Object.assign(this, data);
             this._id = data === null || data === void 0 ? void 0 : data._id;
             this._metadata = new Metadata(data === null || data === void 0 ? void 0 : data._metadata);
         }
@@ -274,6 +304,8 @@ class DataStackDocument {
 exports.DataStackDocument = DataStackDocument;
 class Metadata {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.deleted = (data === null || data === void 0 ? void 0 : data.deleted) || false;
         this.lastUpdated = (data === null || data === void 0 ? void 0 : data.lastUpdated) ? new Date(data === null || data === void 0 ? void 0 : data.lastUpdated) : undefined;
         this.lastUpdatedBy = (data === null || data === void 0 ? void 0 : data.lastUpdatedBy) || '';
@@ -284,6 +316,8 @@ class Metadata {
 exports.Metadata = Metadata;
 class WebHook {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.name = data.name;
         this.url = data.url;
         this.failMessage = data.failMessage;
@@ -292,6 +326,8 @@ class WebHook {
 exports.WebHook = WebHook;
 class SchemaField {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.key = data === null || data === void 0 ? void 0 : data.key;
         this.type = (data === null || data === void 0 ? void 0 : data.type) || SchemaFieldTypes.STRING;
         this.properties = new SchemaFieldProperties(data === null || data === void 0 ? void 0 : data.properties);
@@ -360,6 +396,8 @@ var SchemaFieldTypes;
 })(SchemaFieldTypes = exports.SchemaFieldTypes || (exports.SchemaFieldTypes = {}));
 class SchemaFieldProperties {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.name = data === null || data === void 0 ? void 0 : data.name;
         this.required = (data === null || data === void 0 ? void 0 : data.required) || false;
         this.unique = (data === null || data === void 0 ? void 0 : data.unique) || false;
@@ -474,6 +512,8 @@ var WorkflowActions;
 })(WorkflowActions = exports.WorkflowActions || (exports.WorkflowActions = {}));
 class WorkflowRespond {
     constructor(data) {
+        if (data)
+            Object.assign(this, data);
         this.remarks = data === null || data === void 0 ? void 0 : data.remarks;
         this.attachments = (data === null || data === void 0 ? void 0 : data.attachments) || [];
     }

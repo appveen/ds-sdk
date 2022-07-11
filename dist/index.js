@@ -239,10 +239,41 @@ class DataStack {
             }
         });
     }
-    ListApps() {
+    CountApps(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const searchParams = new URLSearchParams();
+                if (filter) {
+                    searchParams.append('filter', JSON.stringify(filter));
+                }
+                searchParams.append('countOnly', 'true');
+                let resp = yield got_1.default.get(this.api + '/data/app/count', {
+                    searchParams: searchParams,
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return resp.body.map((item) => {
+                    return new DSApp(item);
+                });
+            }
+            catch (err) {
+                logError('[ERROR] [CountApps]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    ListApps(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const searchParams = new URLSearchParams();
+                if (options && options.filter) {
+                    searchParams.append('filter', JSON.stringify(options.filter));
+                }
+                if (options && options.select) {
+                    searchParams.append('select', options.select);
+                }
                 searchParams.append('count', '-1');
                 let resp = yield got_1.default.get(this.api + '/data/app', {
                     searchParams: searchParams,
@@ -468,6 +499,31 @@ class DSApp {
             }
             catch (err) {
                 logError('[ERROR] [StopAllDataServices]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
+    CountDataServices(filter) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const searchParams = new URLSearchParams();
+                if (filter) {
+                    searchParams.append('filter', JSON.stringify(filter));
+                }
+                searchParams.append('countOnly', 'true');
+                let resp = yield got_1.default.get(this.api + '/count', {
+                    searchParams: searchParams,
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json'
+                });
+                return resp.body.map((item) => {
+                    return new DSApp(item);
+                });
+            }
+            catch (err) {
+                logError('[ERROR] [CountDataServices]', err);
                 throw new types_1.ErrorResponse(err.response);
             }
         });

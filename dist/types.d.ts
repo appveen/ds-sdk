@@ -130,6 +130,9 @@ export declare class DataService {
     };
     draftVersion?: number | undefined;
     version?: number;
+    deploymentName?: string;
+    deploymentNamespace?: string;
+    app?: string;
     constructor(data?: DataService);
     HasDraft(): boolean;
 }

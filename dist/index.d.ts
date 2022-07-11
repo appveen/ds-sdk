@@ -23,7 +23,8 @@ export declare class DataStack {
     api: string;
     constructor(data: AuthData);
     Logout(): Promise<void>;
-    ListApps(): Promise<DSApp[]>;
+    CountApps(filter?: any): Promise<DSApp[]>;
+    ListApps(options: ListOptions): Promise<DSApp[]>;
     App(name: string): Promise<DSApp>;
     CreateApp(name: string): Promise<DSApp>;
     DeleteApp(name: string): Promise<DataStack>;
@@ -37,6 +38,7 @@ export declare class DSApp {
     RepairAllDataServices(filter: any): Promise<SuccessResponse[]>;
     StartAllDataServices(filter: any): Promise<SuccessResponse[]>;
     StopAllDataServices(filter: any): Promise<SuccessResponse[]>;
+    CountDataServices(filter?: any): Promise<DSApp[]>;
     ListDataServices(options: ListOptions): Promise<DSDataService[]>;
     DataService(name: string): Promise<DSDataService>;
     CreateDataService(name: string, description?: string): Promise<DSDataService>;

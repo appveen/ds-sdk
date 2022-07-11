@@ -10,6 +10,7 @@ export class App {
     users: Array<string> | undefined;
     groups: Array<string> | undefined;
     constructor(data?: App) {
+        if (data) Object.assign(this, data);
         this._id = data?._id;
         this.description = data?.description;
         this.appCenterStyle = data?.appCenterStyle;
@@ -25,6 +26,7 @@ export class AppCenterStyle {
     primaryColor: string | undefined;
     textColor: string | undefined;
     constructor(data?: AppCenterStyle) {
+        if (data) Object.assign(this, data);
         this.theme = data?.theme;
         this.bannerColor = data?.bannerColor;
         this.primaryColor = data?.primaryColor;
@@ -36,6 +38,7 @@ export class Logo {
     full: string | undefined;
     thumbnail: string | undefined;
     constructor(data?: Logo) {
+        if (data) Object.assign(this, data);
         this.full = data?.full;
         this.thumbnail = data?.thumbnail;
     }
@@ -71,6 +74,7 @@ export class UserDetails {
     b2BEnable: boolean | undefined;
 
     constructor(data?: UserDetails) {
+        if (data) Object.assign(this, data);
         this._id = data?._id;
         this.basicDetails = data?.basicDetails;
         this.enableSessionRefresh = data?.enableSessionRefresh;
@@ -105,6 +109,7 @@ export class Auth {
     dn: string | undefined;
     authType: string | undefined;
     constructor(data?: Auth) {
+        if (data) Object.assign(this, data);
         this.isLdap = data?.isLdap;
         this.dn = data?.dn;
         this.authType = data?.authType;
@@ -114,6 +119,7 @@ export class AccessControl {
     apps: App[] | undefined;
     accessLevel: string | undefined;
     constructor(data?: AccessControl) {
+        if (data) Object.assign(this, data);
         this.apps = data?.apps;
         this.accessLevel = data?.accessLevel;
     }
@@ -124,6 +130,7 @@ export class BasicDetails {
     email: string | undefined;
     phone: string | undefined;
     constructor(data?: BasicDetails) {
+        if (data) Object.assign(this, data);
         this.name = data?.name;
         this.email = data?.email;
         this.phone = data?.phone;
@@ -154,6 +161,7 @@ export class Credentials {
      */
     logger?: Logger;
     constructor(data?: Credentials) {
+        if (data) Object.assign(this, data);
         this.host = data?.host || process.env.DATA_STACK_HOST;
         this.username = data?.username || process.env.DATA_STACK_USERNAME;
         this.password = data?.password || process.env.DATA_STACK_PASSWORD;
@@ -169,6 +177,7 @@ export class ListOptions {
     filter: any | undefined;
     expand: boolean;
     constructor(data?: ListOptions) {
+        if (data) Object.assign(this, data);
         this.select = data?.select;
         this.sort = data?.sort;
         this.page = data?.page;
@@ -209,7 +218,11 @@ export class DataService {
     }
     draftVersion?: number | undefined;
     version?: number;
+    deploymentName?: string;
+    deploymentNamespace?: string;
+    app?: string;
     constructor(data?: DataService) {
+        if (data) Object.assign(this, data);
         this._id = data?._id;
         this.name = data?.name;
         this.description = data?.description;
@@ -245,6 +258,8 @@ export class DataService {
         this.role = data?.role || { fields: {}, roles: [new RoleBlock()] };
         this.draftVersion = data?.draftVersion;
         this.version = data?.version || 1;
+        this.deploymentName = camelCase(this.name).toLowerCase();
+        this.deploymentNamespace = this.app?.toLowerCase();
     }
 
     public HasDraft(): boolean {
@@ -270,6 +285,7 @@ export class RoleBlock {
     operations: Array<{ method: RoleMethods }>
 
     constructor(data?: RoleBlock) {
+        if (data) Object.assign(this, data);
         this.id = data?.id || 'P' + Math.ceil(Math.random() * 10000000000);
         this.name = data?.name;
         this.description = data?.description;
@@ -358,6 +374,7 @@ export class ErrorResponse {
     body?: object;
     message?: string;
     constructor(data: ErrorResponse | any) {
+        if (data) Object.assign(this, data);
         if (typeof data === 'string') {
             this.statusCode = 500;
             this.body = { message: data };
@@ -374,6 +391,7 @@ export class SuccessResponse {
     message: string;
     [key: string]: any;
     constructor(data: SuccessResponse | any) {
+        if (data) Object.assign(this, data);
         this.message = data?.message;
     }
 }
@@ -391,7 +409,7 @@ export class FileUploadResponse {
         filename: string | undefined;
     } | undefined;
     constructor(data: any) {
-        Object.assign(this, data);
+        if (data) Object.assign(this, data);
     }
 }
 
@@ -401,7 +419,7 @@ export class DataStackDocument {
     [key: string]: FileUploadResponse | any;
     constructor(data?: any) {
         if (data) {
-            Object.assign(this, data);
+            if (data) Object.assign(this, data);
             this._id = data?._id;
             this._metadata = new Metadata(data?._metadata);
         }
@@ -425,6 +443,7 @@ export class Metadata {
         release: string;
     } | undefined;
     constructor(data: Metadata) {
+        if (data) Object.assign(this, data);
         this.deleted = data?.deleted || false;
         this.lastUpdated = data?.lastUpdated ? new Date(data?.lastUpdated) : undefined;
         this.lastUpdatedBy = data?.lastUpdatedBy || '';
@@ -439,6 +458,7 @@ export class WebHook {
     url: string;
     failMessage: string;
     constructor(data: WebHook) {
+        if (data) Object.assign(this, data);
         this.name = data.name;
         this.url = data.url;
         this.failMessage = data.failMessage;
@@ -452,6 +472,7 @@ export class SchemaField {
     private properties: SchemaFieldProperties;
     private definition: SchemaField[];
     constructor(data?: SchemaField) {
+        if (data) Object.assign(this, data);
         this.key = data?.key;
         this.type = data?.type || SchemaFieldTypes.STRING;
         this.properties = new SchemaFieldProperties(data?.properties);
@@ -548,6 +569,7 @@ export class SchemaFieldProperties {
     private dateType: string | undefined;
 
     constructor(data?: SchemaFieldProperties) {
+        if (data) Object.assign(this, data);
         this.name = data?.name;
         this.required = data?.required || false;
         this.unique = data?.unique || false;
@@ -695,6 +717,7 @@ export class WorkflowRespond {
     private attachments: Array<File>;
 
     constructor(data?: any) {
+        if (data) Object.assign(this, data);
         this.remarks = data?.remarks;
         this.attachments = data?.attachments || [];
     }

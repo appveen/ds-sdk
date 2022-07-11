@@ -256,10 +256,39 @@ export class DataStack {
         }
     }
 
-
-    public async ListApps(): Promise<DSApp[]> {
+    public async CountApps(filter?: any): Promise<DSApp[]> {
         try {
             const searchParams = new URLSearchParams();
+            if (filter) {
+                searchParams.append('filter', JSON.stringify(filter));
+            }
+            searchParams.append('countOnly', 'true');
+            let resp = await got.get(this.api + '/data/app/count', {
+                searchParams: searchParams,
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return resp.body.map((item: any) => {
+                return new DSApp(item);
+            });
+        } catch (err: any) {
+            logError('[ERROR] [CountApps]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+
+    public async ListApps(options: ListOptions): Promise<DSApp[]> {
+        try {
+            const searchParams = new URLSearchParams();
+            if (options && options.filter) {
+                searchParams.append('filter', JSON.stringify(options.filter));
+            }
+            if (options && options.select) {
+                searchParams.append('select', options.select);
+            }
             searchParams.append('count', '-1');
             let resp = await got.get(this.api + '/data/app', {
                 searchParams: searchParams,
@@ -471,6 +500,29 @@ export class DSApp {
             }
         } catch (err: any) {
             logError('[ERROR] [StopAllDataServices]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
+    public async CountDataServices(filter?: any): Promise<DSApp[]> {
+        try {
+            const searchParams = new URLSearchParams();
+            if (filter) {
+                searchParams.append('filter', JSON.stringify(filter));
+            }
+            searchParams.append('countOnly', 'true');
+            let resp = await got.get(this.api + '/count', {
+                searchParams: searchParams,
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json'
+            }) as any;
+            return resp.body.map((item: any) => {
+                return new DSApp(item);
+            });
+        } catch (err: any) {
+            logError('[ERROR] [CountDataServices]', err);
             throw new ErrorResponse(err.response);
         }
     }
