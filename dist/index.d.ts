@@ -4,6 +4,7 @@ interface AuthData {
     uuid: string | undefined;
     token: string | undefined;
     rToken: string | undefined;
+    isSuperAdmin: boolean;
     expiresIn: number | undefined;
     rbacBotTokenDuration: number | undefined;
     rbacHbInterval: number | undefined;
@@ -30,7 +31,6 @@ export declare class DataStack {
 export declare class DSApp {
     app: App;
     api: string;
-    private managementAPIs;
     private dataServiceMap;
     constructor(app: App);
     private CreateDataServiceMap;
@@ -48,7 +48,6 @@ export declare class DSDataService {
     private originalData;
     private draftData;
     private api;
-    private smApi;
     private _isDraft;
     constructor(app: App, data: DataService);
     private FetchDraft;
@@ -141,6 +140,7 @@ export declare class DataMethods {
     ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;
     UploadFileFromPath(filePath: string): Promise<FileUploadResponse>;
     UploadFileAsStream(data: any): Promise<FileUploadResponse>;
+    DownloadFileAsStream(data: any): Promise<any>;
 }
 export declare class MathAPI {
     private selectedField;
