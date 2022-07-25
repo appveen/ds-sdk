@@ -1322,7 +1322,7 @@ export class DataMethods {
         }
     }
 
-    public async UpdateRecord(id: string, data: any, options?: { expireAt: string | number, expireAfter: string }): Promise<DataStackDocument> {
+    public async UpdateRecord(id: string, data: any, options?: { expireAt?: string | number, expireAfter?: string, filter?: any, useFilter?: boolean }): Promise<DataStackDocument> {
         try {
             let url = this.api + '/' + id;
             const params = [];
@@ -1332,6 +1332,12 @@ export class DataMethods {
                 }
                 if (options.expireAt !== null || options.expireAt !== undefined) {
                     params.push(`expireAt=${options.expireAt}`);
+                }
+                if (options.useFilter !== null || options.useFilter !== undefined) {
+                    params.push(`useFilter=${options.useFilter}`);
+                }
+                if (options.filter !== null || options.filter !== undefined) {
+                    params.push(`filter=${JSON.stringify(options.filter)}`);
                 }
             }
             if (params.length > 0) {
@@ -1351,7 +1357,7 @@ export class DataMethods {
         }
     }
 
-    public async UpsertRecord(id: string, data: any, options?: { expireAt: string | number, expireAfter: string }): Promise<DataStackDocument> {
+    public async UpsertRecord(id: string, data: any, options?: { expireAt?: string | number, expireAfter?: string, filter?: any, useFilter?: boolean }): Promise<DataStackDocument> {
         try {
             let url = this.api + '/' + id;
             const params = ['upsert=true'];
@@ -1361,6 +1367,12 @@ export class DataMethods {
                 }
                 if (options.expireAt !== null || options.expireAt !== undefined) {
                     params.push(`expireAt=${options.expireAt}`);
+                }
+                if (options.useFilter !== null || options.useFilter !== undefined) {
+                    params.push(`useFilter=${options.useFilter}`);
+                }
+                if (options.filter !== null || options.filter !== undefined) {
+                    params.push(`filter=${JSON.stringify(options.filter)}`);
                 }
             }
             if (params.length > 0) {
@@ -1425,6 +1437,37 @@ export class DataMethods {
         }
     }
 
+    // public async BulkUpdateRecord(options: { keys: string[], filter?: any, docs?: any[], data?: any, expireAt?: string | number, expireAfter?: string }): Promise<DataStackDocument> {
+    //     try {
+    //         let url = this.api + '/utils/bulkUpdate';
+    //         const params = [];
+    //         if (options) {
+    //             if (options.expireAfter !== null || options.expireAfter !== undefined) {
+    //                 params.push(`expireAfter=${options.expireAfter}`);
+    //             }
+    //             if (options.expireAt !== null || options.expireAt !== undefined) {
+    //                 params.push(`expireAt=${options.expireAt}`);
+    //             }
+    //         }
+    //         delete options.expireAfter;
+    //         delete options.expireAt;
+    //         if (params.length > 0) {
+    //             url += '?' + params.join('&');
+    //         }
+    //         let resp = await got.put(url, {
+    //             headers: {
+    //                 Authorization: 'JWT ' + authData.token
+    //             },
+    //             responseType: 'json',
+    //             json: options
+    //         }) as any;
+    //         return new DataStackDocument(resp.body);
+    //     } catch (err: any) {
+    //         logError('[ERROR] [UpdateRecord]', err);
+    //         throw new ErrorResponse(err.response);
+    //     }
+    // }
+
     public PrepareMath(): MathAPI {
         try {
             return new MathAPI();
@@ -1467,23 +1510,7 @@ export class DataMethods {
             throw new ErrorResponse(err.response);
         }
     }
-    // public async UploadFileAsDataURL(dataString: string) {
-    //     try {
-    //         const form = new FormData();
-    //         form.append('file', createReadStream(filePath));
-    //         let resp = await got.post(this.api + '/utils/file/upload', {
-    //             headers: {
-    //                 Authorization: 'JWT ' + authData.token,
-    //             },
-    //             body: form,
-    //             responseType: 'json'
-    //         }) as any;
-    //         return new FileUploadResponse(resp.body);
-    //     } catch (err: any) {
-    //         logError('[ERROR] [UploadFileAsDataURL]', err);
-    //         throw new ErrorResponse(err.response);
-    //     }
-    // }
+
     public async UploadFileAsStream(data: any) {
         try {
             const form = new FormData();

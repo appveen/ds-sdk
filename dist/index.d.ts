@@ -127,12 +127,16 @@ export declare class DataMethods {
     ListRecords(options: ListOptions): Promise<DataStackDocument[]>;
     GetRecord(id: string): Promise<DataStackDocument>;
     UpdateRecord(id: string, data: any, options?: {
-        expireAt: string | number;
-        expireAfter: string;
+        expireAt?: string | number;
+        expireAfter?: string;
+        filter?: any;
+        useFilter?: boolean;
     }): Promise<DataStackDocument>;
     UpsertRecord(id: string, data: any, options?: {
-        expireAt: string | number;
-        expireAfter: string;
+        expireAt?: string | number;
+        expireAfter?: string;
+        filter?: any;
+        useFilter?: boolean;
     }): Promise<DataStackDocument>;
     CreateRecord(data: any, options?: {
         expireAt: string | number;
