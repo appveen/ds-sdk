@@ -143,6 +143,10 @@ export declare class DataMethods {
         expireAfter: string;
     }): Promise<DataStackDocument>;
     DeleteRecord(id: string): Promise<ErrorResponse>;
+    BulkDeleteRecords(options: {
+        ids?: string[];
+        filter?: any;
+    }): Promise<ErrorResponse>;
     PrepareMath(): MathAPI;
     ApplyMath(id: string, math: MathAPI): Promise<DataStackDocument>;
     UploadFileFromPath(filePath: string): Promise<FileUploadResponse>;

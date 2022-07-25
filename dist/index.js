@@ -1463,6 +1463,37 @@ class DataMethods {
             }
         });
     }
+    BulkDeleteRecords(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let url = this.api + '/utils/bulkDelete';
+                const params = [];
+                if (options) {
+                    if (options.ids !== null || options.ids !== undefined) {
+                        params.push(`ids=${options.ids}`);
+                    }
+                    if (options.filter !== null || options.filter !== undefined) {
+                        params.push(`filter=${JSON.stringify(options.filter)}`);
+                    }
+                }
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                let resp = yield got_1.default.delete(url, {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: {}
+                });
+                return new types_1.SuccessResponse(resp.body);
+            }
+            catch (err) {
+                logError('[ERROR] [BulkDeleteRecords]', err);
+                throw new types_1.ErrorResponse(err.response);
+            }
+        });
+    }
     // public async BulkUpdateRecord(options: { keys: string[], filter?: any, docs?: any[], data?: any, expireAt?: string | number, expireAfter?: string }): Promise<DataStackDocument> {
     //     try {
     //         let url = this.api + '/utils/bulkUpdate';

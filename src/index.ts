@@ -1437,6 +1437,35 @@ export class DataMethods {
         }
     }
 
+    public async BulkDeleteRecords(options: { ids?: string[], filter?: any }): Promise<ErrorResponse> {
+        try {
+            let url = this.api + '/utils/bulkDelete';
+            const params = [];
+            if (options) {
+                if (options.ids !== null || options.ids !== undefined) {
+                    params.push(`ids=${options.ids}`);
+                }
+                if (options.filter !== null || options.filter !== undefined) {
+                    params.push(`filter=${JSON.stringify(options.filter)}`);
+                }
+            }
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            let resp = await got.delete(url, {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: {}
+            }) as any;
+            return new SuccessResponse(resp.body);
+        } catch (err: any) {
+            logError('[ERROR] [BulkDeleteRecords]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
+
     // public async BulkUpdateRecord(options: { keys: string[], filter?: any, docs?: any[], data?: any, expireAt?: string | number, expireAfter?: string }): Promise<DataStackDocument> {
     //     try {
     //         let url = this.api + '/utils/bulkUpdate';
