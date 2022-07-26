@@ -1618,12 +1618,11 @@ class DataMethods {
                     responseType: 'json',
                     json: pipeline
                 });
-                return resp.body.map((item) => {
-                    return new types_1.DataStackDocument(item);
-                });
-            } catch (err) {
+                return resp.body;
+            }
+            catch (err) {
                 logError('[ERROR] [AggregatePipeline]', err);
-                throw new ErrorResponse(err.response);
+                throw new types_1.ErrorResponse(err.response);
             }
         });
     }

@@ -1582,9 +1582,7 @@ export class DataMethods {
                 responseType: 'json',
                 json: pipeline
             }) as any;
-            return resp.body.map((item: any) => {
-                return new DataStackDocument(item);
-            });
+            return resp.body;
         } catch (err: any) {
             logError('[ERROR] [AggregatePipeline]', err);
             throw new ErrorResponse(err.response);
