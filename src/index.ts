@@ -1572,6 +1572,22 @@ export class DataMethods {
             throw new ErrorResponse(err.response);
         }
     }
+
+    public async AggregatePipeline(pipeline: any[]) {
+        try {
+            let resp = await got.post(this.api + '/utils/aggregate', {
+                headers: {
+                    Authorization: 'JWT ' + authData.token
+                },
+                responseType: 'json',
+                json: pipeline
+            }) as any;
+            return resp.body;
+        } catch (err: any) {
+            logError('[ERROR] [AggregatePipeline]', err);
+            throw new ErrorResponse(err.response);
+        }
+    }
 }
 
 export class MathAPI {

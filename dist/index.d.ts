@@ -152,6 +152,7 @@ export declare class DataMethods {
     UploadFileFromPath(filePath: string): Promise<FileUploadResponse>;
     UploadFileAsStream(data: any): Promise<FileUploadResponse>;
     DownloadFileAsStream(data: any): Promise<any>;
+    AggregatePipeline(pipeline: any[]): Promise<any>;
 }
 export declare class MathAPI {
     private selectedField;
