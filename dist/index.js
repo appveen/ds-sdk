@@ -1608,6 +1608,25 @@ class DataMethods {
             }
         });
     }
+    AggregatePipeline(pipeline) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                let resp = yield got_1.default.post(this.api + '/utils/aggregate', {
+                    headers: {
+                        Authorization: 'JWT ' + authData.token
+                    },
+                    responseType: 'json',
+                    json: pipeline
+                });
+                return resp.body.map((item) => {
+                    return new types_1.DataStackDocument(item);
+                });
+            } catch (err) {
+                logError('[ERROR] [AggregatePipeline]', err);
+                throw new ErrorResponse(err.response);
+            }
+        });
+    }
 }
 exports.DataMethods = DataMethods;
 class MathAPI {
