@@ -523,16 +523,14 @@ class DSApp {
                     searchParams.append('filter', JSON.stringify(filter));
                 }
                 searchParams.append('countOnly', 'true');
-                let resp = yield httpRequest.get(this.api + '/count', {
+                let resp = yield httpRequest.get(this.api + '/utils/count', {
                     searchParams: searchParams,
                     headers: {
                         Authorization: 'JWT ' + authData.token
                     },
                     responseType: 'json'
                 });
-                return resp.body.map((item) => {
-                    return new DSApp(item);
-                });
+                return resp.body;
             }
             catch (err) {
                 logError('[ERROR] [CountDataServices]', err);

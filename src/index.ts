@@ -516,30 +516,28 @@ export class DSApp {
         }
     }
 
-    public async CountDataServices(filter?: any): Promise<DSApp[]> {
+    public async CountDataServices(filter?: any): Promise<number> {
         try {
             const searchParams = new URLSearchParams();
             if (filter) {
                 searchParams.append('filter', JSON.stringify(filter));
             }
             searchParams.append('countOnly', 'true');
-            let resp = await httpRequest.get(this.api + '/count', {
+            let resp = await httpRequest.get(this.api + '/utils/count', {
                 searchParams: searchParams,
                 headers: {
                     Authorization: 'JWT ' + authData.token
                 },
                 responseType: 'json'
             }) as any;
-            return resp.body.map((item: any) => {
-                return new DSApp(item);
-            });
+            return resp.body;
         } catch (err: any) {
             logError('[ERROR] [CountDataServices]', err);
             throw new ErrorResponse(err.response);
         }
     }
 
-    public async ListDataServices(options: ListOptions): Promise<DSDataService[]> {
+    public async ListDataServices(options?: ListOptions): Promise<DSDataService[]> {
         try {
             const searchParams = new URLSearchParams();
             if (!options) {
